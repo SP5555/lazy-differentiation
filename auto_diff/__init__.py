@@ -1,4 +1,4 @@
-from .operations import Add, Subtract, Multiply, Divide, Exp, Log
+from .operations import Add, Subtract, Multiply, Divide, Exp, Log, Power, Sqrt, Tanh, Sigmoid
 from .tensor import Tensor
 
 __all__ = ["Tensor",
@@ -7,4 +7,8 @@ __all__ = ["Tensor",
            "Multiply",
            "Divide",
            "Exp",
-           "Log"]
+           "Log",
+           "Power",
+           "Sqrt",
+           "Tanh",
+           "Sigmoid"]
