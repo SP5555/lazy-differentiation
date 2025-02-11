@@ -1,3 +1,9 @@
+import sys
+import os
+
+# some issues
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import numpy as np
 from auto_diff import *
 
@@ -9,7 +15,7 @@ def main():
     b = Tensor(array2, "b")
     two = Tensor(2.0)
 
-    expression = (a + b) * two * b
+    expression = (a + b) * (a / b)
 
     # forward pass (Grade 1 math)
     print(f"Forward: {expression.forward()}")
