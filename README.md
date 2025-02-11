@@ -15,13 +15,13 @@ f(a,b) =\ln b\tanh\left(\sqrt{\frac{a}{b}}\right)+a^{\sqrt{2b}}
 And now, for some reason, you want the partial derivative with respect to $a$.
 
 ```math
-\frac{\partial f}{\partial a} =\frac{\ln( b)\operatorname{sech}^{2}\left(\sqrt{\frac{a}{b}}\right)}{2b\sqrt{\frac{a}{b}}} +\sqrt{2b}\left( a^{\sqrt{2b} -1}\right)
+\frac{\partial f}{\partial a} =\frac{\ln( b){sech}^{2}\left(\sqrt{\frac{a}{b}}\right)}{2b\sqrt{\frac{a}{b}}} +\sqrt{2b}\left( a^{\sqrt{2b} -1}\right)
 ```
 
 While you're at it, why not grab the partial derivative with respect to $b$ too.
 
 ```math
-\frac{\partial f}{\partial b} =-\frac{a\ln( b)\operatorname{sech}^{2}\left(\sqrt{\frac{a}{b}}\right)}{2b^{2}\sqrt{\frac{a}{b}}} +\frac{a^{\sqrt{2b}}\ln( a)}{\sqrt{2b}} +\frac{\tanh\left(\sqrt{\frac{a}{b}}\right)}{b}
+\frac{\partial f}{\partial b} =-\frac{a\ln( b){sech}^{2}\left(\sqrt{\frac{a}{b}}\right)}{2b^{2}\sqrt{\frac{a}{b}}} +\frac{a^{\sqrt{2b}}\ln( a)}{\sqrt{2b}} +\frac{\tanh\left(\sqrt{\frac{a}{b}}\right)}{b}
 ```
 
 You just witnessed an intellectual nuclear detonation. I had to use a derivative calculator. Fair enough.
