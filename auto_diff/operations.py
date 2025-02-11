@@ -1,6 +1,7 @@
-from .core import Variable
+from .comp_node import CompNode
 
-class Operation:
+class Operation(CompNode):
+
     def forward(self):
         raise NotImplementedError
     
@@ -18,7 +19,7 @@ class Operation:
         return self.forward()
 
 class Add(Operation):
-    def __init__(self, A: Variable | Operation, B: Variable | Operation):
+    def __init__(self, A: CompNode, B: CompNode):
         self.A = A
         self.B = B
     
@@ -30,7 +31,7 @@ class Add(Operation):
         return self.A.backward(w_r_t) + self.B.backward(w_r_t)
 
 class Multiply(Operation):
-    def __init__(self, A: Variable | Operation, B: Variable | Operation):
+    def __init__(self, A: CompNode, B: CompNode):
         self.A = A
         self.B = B
     
