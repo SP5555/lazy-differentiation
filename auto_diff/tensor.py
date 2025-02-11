@@ -1,5 +1,5 @@
 import numpy as np
-from .comp_node import CompNode
+from .comp_node import CompNode, GLOBAL_GRAPH_CACHE
 
 class Tensor(CompNode):
     """
@@ -31,6 +31,9 @@ class Tensor(CompNode):
             raise TypeError("Value must be a NumPy array or a float.")
         self.tensor = value
         self.name = name
+    
+    def signature(self):
+        return ("Tensor", id(self))
 
     def forward(self) -> np.ndarray | float:
         return self.tensor

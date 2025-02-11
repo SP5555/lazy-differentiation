@@ -6,18 +6,19 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 
 import numpy as np
 from auto_diff import *
+from auto_diff.comp_node import GLOBAL_GRAPH_CACHE
 
 def main():
-    array1 = np.array([1, 2, 3])
-    array2 = np.array([4, 5, 6])
 
-    a = Tensor(array1, "a")
-    b = Tensor(array2, "b")
+    a = Tensor(np.array([1, 2, 3]), "a")
+    b = Tensor(np.array([4, 5, 6]), "b")
+    c = Tensor(np.array([7, 8, 9]), "c")
     two = Tensor(2.0) # wrap inside Tensor if you wanna use a constant
 
     # expression = (a + b) ** (a / b)
     # expression = Sigmoid(a/b)
-    expression = Log(b) * Tanh(Sqrt(a/b)) + a ** Sqrt(two * b)
+    # expression = Log(b) * Tanh(Sqrt(a/b)) + a ** Sqrt(two * b)
+    expression = (a*b) + (a*b) + (a*b)
 
     np.set_printoptions(precision=8)
 
@@ -35,6 +36,8 @@ def main():
     # derivative of expression with respect to "c"
     # (which doesn’t exist, so should be all zeroes)
     print(f"df/dc  : {expression.backward('c')}")
+
+    # print(GLOBAL_GRAPH_CACHE)
 
 if __name__ == "__main__":
     main()

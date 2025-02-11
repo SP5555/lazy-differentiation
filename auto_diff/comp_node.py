@@ -1,11 +1,21 @@
-from numpy import ndarray
 from abc import ABC, abstractmethod
+from numpy import ndarray
+
+GLOBAL_GRAPH_CACHE = {}
 
 class CompNode(ABC):
     """
     Computational Node
     =====
     """
+    @abstractmethod
+    # returns a Unique signature to be stored in graph cache
+    def signature(self):
+        pass
+
+    def clear_cache(self):
+        GLOBAL_GRAPH_CACHE.clear()
+
     @abstractmethod
     def forward(self) -> ndarray | float:
         """
