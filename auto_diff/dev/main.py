@@ -16,9 +16,8 @@ def main():
     two = Tensor(2.0) # wrap inside Tensor if you wanna use a constant
 
     # expression = (a + b) ** (a / b)
-    # expression = a ** Sqrt(two * b)
-    # expression = Log(b) * Tanh(Sqrt(a))
-    expression = Sigmoid(a/b)
+    # expression = Sigmoid(a/b)
+    expression = Log(b) * Tanh(Sqrt(a/b)) + a ** Sqrt(two * b)
 
     np.set_printoptions(precision=8)
 
@@ -28,10 +27,14 @@ def main():
     # Easy Lazy Derivatives
 
     # derivative of expression with respect to "a"
-    print(f"dE/da  : {expression.backward('a')}")
+    print(f"df/da  : {expression.backward('a')}")
 
     # derivative of expression with respect to "b"
-    print(f"dE/db  : {expression.backward('b')}")
+    print(f"df/db  : {expression.backward('b')}")
+    
+    # derivative of expression with respect to "c"
+    # (which doesn’t exist, so should be all zeroes)
+    print(f"df/dc  : {expression.backward('c')}")
 
 if __name__ == "__main__":
     main()
