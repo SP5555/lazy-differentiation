@@ -1,6 +1,6 @@
 # LAZY Differentiation
 
-**L**ow-effort **A**utomatic **Z**eroing **Y**ield Differentiation module for backpropagation in neural networks.
+**L**ow-effort **A**utomatic **Z**eroing **Y**our-workload Differentiation module for backpropagation in neural networks.
 
 Test code is here: [main.py](auto_diff/dev/main.py)
 
