@@ -6,10 +6,10 @@ Test code is here: [main.py](auto_diff/dev/main.py)
 
 ## First of all, what is the problem?
 
-Let's say you've got this complicated monstrosity (but trust me, you will never, ever need this in your whole life, not even in next one).
+Let's say you've got this absolute monstrosity (but trust me, you will never, ever need this in your entire life, not even in the next one).
 
 ```math
-f(a,b) =\ln b\tanh\left(\sqrt{\frac{a}{b}}\right)+a^{\sqrt{2b}}
+f(a,b) =\ln (b)\tanh\left(\sqrt{\frac{a}{b}}\right)+a^{\sqrt{2b}}
 ```
 
 And now, for some reason, you want the partial derivative with respect to $a$.
