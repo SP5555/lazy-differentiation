@@ -34,9 +34,11 @@ class Operation(CompNode):
     # forward returns the cached value
     # calls compute_forward() if cached value is not available
     def forward(self) -> np.ndarray | float:
-        if self._cached_value is None:
-            self._cached_value = self.compute_forward()
-        return self._cached_value
+        # Got some issues here. I can fix her.
+        # if self._cached_value is None:
+        #     self._cached_value = self.compute_forward()
+        # return self._cached_value
+        return self.compute_forward()
 
     @abstractmethod
     def backward(self) -> np.ndarray | float:

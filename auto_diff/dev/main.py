@@ -19,6 +19,7 @@ def main():
     # expression = Sigmoid(a/b)
     # expression = Log(b) * Tanh(Sqrt(a/b)) + a ** Sqrt(two * b)
     expression = (a*b) + (a*b) + (a*b)
+    # expression = Tanh(a)
 
     np.set_printoptions(precision=8)
 
