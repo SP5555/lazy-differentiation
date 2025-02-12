@@ -33,11 +33,14 @@ class Operation(CompNode):
 
     # forward returns the cached value
     # calls compute_forward() if cached value is not available
-    def forward(self) -> np.ndarray | float:
+    # forward call now auto-clears the global cache
+    def forward(self, cc = True) -> np.ndarray | float:
         # Got some issues here. I can fix her.
         # if self._cached_value is None:
         #     self._cached_value = self.compute_forward()
         # return self._cached_value
+        if cc: # clear cache flag
+            self.clear_cache()
         return self.compute_forward()
 
     @abstractmethod
@@ -52,7 +55,7 @@ class Negate(Operation):
         self.A = A
     
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
+        self.A_tmp = self.A.forward(cc=False)
 
         return -1 * self.A_tmp
 
@@ -68,8 +71,8 @@ class Add(Operation):
         self.B = B
     
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
-        self.B_tmp = self.B.forward()
+        self.A_tmp = self.A.forward(cc=False)
+        self.B_tmp = self.B.forward(cc=False)
 
         return self.A_tmp + self.B_tmp
     
@@ -85,8 +88,8 @@ class Subtract(Operation):
         self.B = B
 
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
-        self.B_tmp = self.B.forward()
+        self.A_tmp = self.A.forward(cc=False)
+        self.B_tmp = self.B.forward(cc=False)
 
         return self.A_tmp - self.B_tmp
     
@@ -102,8 +105,8 @@ class Multiply(Operation):
         self.B = B
 
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
-        self.B_tmp = self.B.forward()
+        self.A_tmp = self.A.forward(cc=False)
+        self.B_tmp = self.B.forward(cc=False)
 
         return self.A_tmp * self.B_tmp
     
@@ -119,8 +122,8 @@ class Divide(Operation):
         self.B = B
 
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
-        self.B_tmp = self.B.forward()
+        self.A_tmp = self.A.forward(cc=False)
+        self.B_tmp = self.B.forward(cc=False)
 
         return self.A_tmp / self.B_tmp
     
@@ -137,12 +140,12 @@ class Exp(Operation):
         self.A = A
 
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
+        self.A_tmp = self.A.forward(cc=False)
 
         return np.exp(self.A_tmp)
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
-        return self.forward() * self.A.backward(w_r_t)
+        return self.forward(cc=False) * self.A.backward(w_r_t)
 
 # Natural Log
 class Log(Operation):
@@ -153,7 +156,7 @@ class Log(Operation):
         self.A = A
 
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
+        self.A_tmp = self.A.forward(cc=False)
 
         return np.log(self.A_tmp)
 
@@ -169,8 +172,8 @@ class Power(Operation):
         self.E = E
 
     def compute_forward(self) -> np.ndarray | float:
-        self.B_tmp = self.B.forward()
-        self.E_tmp = self.E.forward()
+        self.B_tmp = self.B.forward(cc=False)
+        self.E_tmp = self.E.forward(cc=False)
 
         return np.power(self.B_tmp, self.E_tmp)
 
@@ -178,7 +181,7 @@ class Power(Operation):
     # h(x) = f(x)^g(x)
     # h'(x) = f(x)^g(x) (g'(x)ln(f(x)) + g(x)f'(x)/f(x))
     def backward(self, w_r_t: str) -> np.ndarray | float:
-        return self.forward() * (self.E.backward(w_r_t) * np.log(self.B_tmp + EPSILON) + self.E_tmp * self.B.backward(w_r_t) / (self.B_tmp + EPSILON))
+        return self.forward(cc=False) * (self.E.backward(w_r_t) * np.log(self.B_tmp + EPSILON) + self.E_tmp * self.B.backward(w_r_t) / (self.B_tmp + EPSILON))
 
 class Sqrt(Operation):
 
@@ -188,12 +191,12 @@ class Sqrt(Operation):
         self.A = A
 
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
+        self.A_tmp = self.A.forward(cc=False)
 
         return np.sqrt(self.A_tmp)
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
-        return 0.5 / self.forward() * self.A.backward(w_r_t)
+        return 0.5 / self.forward(cc=False) * self.A.backward(w_r_t)
 
 class Tanh(Operation):
 
@@ -203,12 +206,12 @@ class Tanh(Operation):
         self.A = A
 
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
+        self.A_tmp = self.A.forward(cc=False)
 
         return np.tanh(self.A_tmp)
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
-        return (1 - self.forward() ** 2) * self.A.backward(w_r_t)
+        return (1 - self.forward(cc=False) ** 2) * self.A.backward(w_r_t)
 
 class Sigmoid(Operation):
 
@@ -218,9 +221,9 @@ class Sigmoid(Operation):
         self.A = A
     
     def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward()
+        self.A_tmp = self.A.forward(cc=False)
 
         return (np.tanh(self.A_tmp / 2) + 1) / 2
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
-        return self.forward() * (1 - self.forward()) * self.A.backward(w_r_t)
+        return self.forward(cc=False) * (1 - self.forward(cc=False)) * self.A.backward(w_r_t)

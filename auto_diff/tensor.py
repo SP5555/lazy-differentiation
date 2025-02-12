@@ -36,7 +36,7 @@ class Tensor(CompNode):
     def signature(self):
         return id(self)
 
-    def forward(self) -> np.ndarray | float:
+    def forward(self, cc: bool) -> np.ndarray | float:
         return self.tensor
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
