@@ -37,6 +37,8 @@ class Tensor(CompNode):
         return id(self)
 
     def forward(self, cc: bool) -> np.ndarray | float:
+        if cc: # clear cache flag
+            self.clear_cache()
         return self.tensor
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
