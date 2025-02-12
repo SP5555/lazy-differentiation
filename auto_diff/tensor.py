@@ -32,8 +32,9 @@ class Tensor(CompNode):
         self.tensor = value
         self.name = name
     
+    @property
     def signature(self):
-        return ("Tensor", id(self))
+        return id(self)
 
     def forward(self) -> np.ndarray | float:
         return self.tensor

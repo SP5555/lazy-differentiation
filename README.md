@@ -40,11 +40,8 @@ from auto_diff import *
 Define what we need:
 
 ```python
-    array1 = np.array([1, 2, 3])
-    array2 = np.array([4, 5, 6])
-
-    a = Tensor(array1, "a")
-    b = Tensor(array2, "b")
+    a = Tensor(np.array([1, 2, 3]), "a")
+    b = Tensor(np.array([4, 5, 6]), "b")
     two = Tensor(2.0) # wrap inside Tensor if you wanna use a constant
 ```
 
@@ -95,6 +92,6 @@ Compare them with calculator-computed values (*Desmos to the rescue!*).
 
 AWESOME, right?! Yeah! :fire:
 
-Under the hood, it is just an absurd amount of Chain Rule doing their own things. There is no magic. Sadge.
+Under the hood, it is just an *absurd* amount of Chain Rule doing their own things. There is no magic. Sadge.
 
-No manual calculus, no headaches. **Welcome to Automatic Differentiation!**
+No manual calculus, no more headaches. **Welcome to Automatic Differentiation!**

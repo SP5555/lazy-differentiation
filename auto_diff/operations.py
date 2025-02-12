@@ -22,6 +22,10 @@ class Operation(CompNode):
     def __init__(self, *args, **kwargs):
         pass
 
+    @classmethod
+    def signature(cls, *args):
+        return (id(cls), *(id(arg) for arg in args))
+
     @abstractmethod
     # the true compute call
     def compute_forward(self) -> np.ndarray | float:
@@ -30,13 +34,13 @@ class Operation(CompNode):
     # forward returns the cached value
     # calls compute_forward() if cached value is not available
     def forward(self) -> np.ndarray | float:
-        if self._cached_value is not None:
-            return self._cached_value
-        self._cached_value = self.compute_forward()
+        if self._cached_value is None:
+            self._cached_value = self.compute_forward()
         return self._cached_value
-    
+
+    @abstractmethod
     def backward(self) -> np.ndarray | float:
-        raise NotImplementedError
+        pass
 
 class Negate(Operation):
 
@@ -44,10 +48,6 @@ class Negate(Operation):
         if self._is_repeated: return
         super().__init__()
         self.A = A
-
-    @classmethod
-    def signature(self, A: CompNode):
-        return ("Neg", id(A))
     
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()
@@ -64,10 +64,6 @@ class Add(Operation):
         super().__init__()
         self.A = A
         self.B = B
-    
-    @classmethod
-    def signature(self, A: CompNode, B: CompNode):
-        return ("Add", id(A), id(B))
     
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()
@@ -86,10 +82,6 @@ class Subtract(Operation):
         self.A = A
         self.B = B
 
-    @classmethod
-    def signature(self, A: CompNode, B: CompNode):
-        return ("Sub", id(A), id(B))
-
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()
         self.B_tmp = self.B.forward()
@@ -107,10 +99,6 @@ class Multiply(Operation):
         self.A = A
         self.B = B
 
-    @classmethod
-    def signature(self, A: CompNode, B: CompNode):
-        return ("Mul", id(A), id(B))
-    
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()
         self.B_tmp = self.B.forward()
@@ -128,10 +116,6 @@ class Divide(Operation):
         self.A = A
         self.B = B
 
-    @classmethod
-    def signature(self, A: CompNode, B: CompNode):
-        return ("TDiv", id(A), id(B))
-    
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()
         self.B_tmp = self.B.forward()
@@ -150,10 +134,6 @@ class Exp(Operation):
         super().__init__()
         self.A = A
 
-    @classmethod
-    def signature(self, A: CompNode):
-        return ("Exp", id(A))
-
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()
 
@@ -170,10 +150,6 @@ class Log(Operation):
         super().__init__()
         self.A = A
 
-    @classmethod
-    def signature(self, A: CompNode):
-        return ("Add", id(A))
-
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()
 
@@ -189,10 +165,6 @@ class Power(Operation):
         super().__init__()
         self.B = B
         self.E = E
-
-    @classmethod
-    def signature(self, A: CompNode, B: CompNode):
-        return ("Pow", id(A), id(B))
 
     def compute_forward(self) -> np.ndarray | float:
         self.B_tmp = self.B.forward()
@@ -213,10 +185,6 @@ class Sqrt(Operation):
         super().__init__()
         self.A = A
 
-    @classmethod
-    def signature(self, A: CompNode):
-        return ("Add", id(A))
-    
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()
 
@@ -232,10 +200,6 @@ class Tanh(Operation):
         super().__init__()
         self.A = A
 
-    @classmethod
-    def signature(self, A: CompNode):
-        return ("Tanh", id(A))
-
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()
 
@@ -250,10 +214,6 @@ class Sigmoid(Operation):
         if self._is_repeated: return
         super().__init__()
         self.A = A
-
-    @classmethod
-    def signature(self, A: CompNode):
-        return ("Sigmoid", id(A))
     
     def compute_forward(self) -> np.ndarray | float:
         self.A_tmp = self.A.forward()

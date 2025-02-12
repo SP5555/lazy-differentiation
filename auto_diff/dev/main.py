@@ -37,7 +37,9 @@ def main():
     # (which doesn’t exist, so should be all zeroes)
     print(f"df/dc  : {expression.backward('c')}")
 
-    # print(GLOBAL_GRAPH_CACHE)
+    print("global cache")
+    for k in GLOBAL_GRAPH_CACHE:
+        print(k)
 
 if __name__ == "__main__":
     main()
