@@ -35,13 +35,11 @@ class Operation(CompNode):
     # calls compute_forward() if cached value is not available
     # forward call now auto-clears the global cache
     def forward(self, cc = True) -> np.ndarray | float:
-        # Got some issues here. I can fix her.
-        # if self._cached_value is None:
-        #     self._cached_value = self.compute_forward()
-        # return self._cached_value
         if cc: # clear cache flag
             self.clear_cache()
-        return self.compute_forward()
+        if self._cached_value is None:
+            self._cached_value = self.compute_forward()
+        return self._cached_value
 
     @abstractmethod
     def backward(self) -> np.ndarray | float:
