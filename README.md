@@ -34,7 +34,7 @@ Summon the modules:
 
 ```python
 import numpy as np
-from auto_diff import *
+from auto_diff_forward import *
 ```
 
 Define what we need:

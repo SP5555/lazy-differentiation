@@ -44,9 +44,9 @@ class Tensor(CompNode):
     def backward(self, w_r_t: str) -> np.ndarray | float:
         if w_r_t == self.name:
             if isinstance(self.tensor, np.ndarray):
-                return np.ones_like(self.tensor)
+                return np.ones_like(self.tensor, dtype=np.float64)
             return 1.0
         else:
             if isinstance(self.tensor, np.ndarray):
-                return np.zeros_like(self.tensor)
+                return np.zeros_like(self.tensor, dtype=np.float64)
             return 0.0
