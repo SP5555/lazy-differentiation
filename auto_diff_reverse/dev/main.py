@@ -31,6 +31,10 @@ def main():
     print(f"df/db  : {b.grad}")
     print(f"df/dc  : {c.grad}")
 
+    a.zero_grad()
+    b.zero_grad()
+    c.zero_grad()
+
     # cached values should be empty as forward() clears cache
     print("global cache")
     for k in GLOBAL_GRAPH_CACHE:

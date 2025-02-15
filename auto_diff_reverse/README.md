@@ -37,7 +37,7 @@ expression.forward()
 expression.backward(seed=np.array([1, 1, 1]))
 ```
 
-What’s the deal with the SEED? In simple terms, if you just want the "normal" derivative, pass in `1.0` or a numpy array of ones with the same dimensions. But here’s the kicker: the seed plays a crucial role in backpropagation for neural networks, as it directly represents the gradient of the loss in the expression.
+What’s the deal with the SEED? In simple terms, if you just want the "normal" derivative, pass in `1.0` or a numpy array of ones with the same dimensions. But here's the kicker: the seed plays a crucial role in backpropagation for neural networks, as it directly represents the gradient of the loss in the expression.
 
 5. Then, enjoy the benefits:
     - `evaluate()` returns the value calculated by the forward pass.
@@ -57,4 +57,12 @@ Forward: [ 1.64063041  9.85328756 46.04784529]
 df/da  : [ 3.10098914 14.32976344 52.04465632]
 df/db  : [ 0.04738879  2.00435228 14.29276426]
 df/dc  : [0. 0. 0.]
+```
+
+6. After the backward pass, `zero_grad()` must be called to reset the accumulated gradients to zero if we plan to do another backward pass with different seed.
+
+```python
+a.zero_grad()
+b.zero_grad()
+c.zero_grad()
 ```

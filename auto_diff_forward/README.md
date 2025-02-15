@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Forward Accumulation** is easier to understand mostly due to its similarity to how we (as humans, students, whatever) understand and calculate the derivatives by hand. It works by applying the chain-rule inside-out, (from inputs to outputs).
+**Forward Accumulation** is easier to understand mostly due to its similarity to how we (as humans, students, whatever) understand and calculate the derivatives by hand. It works by applying the chain-rule inside-out (from inputs to outputs).
 
 It calculates the gradients starting from the leaves (**Tensors**) of the expression tree and moving towards the root.
 
