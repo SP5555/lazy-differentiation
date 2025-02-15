@@ -1,9 +1,9 @@
 import numpy as np
-from .comp_node import CompNode, GLOBAL_GRAPH_CACHE
+from .comp_node import CompNode
 
 class Tensor(CompNode):
     """
-    Tensor
+    Tensor (Forward Accumulation)
     =====
     A class representing a tensor in the context of automatic differentiation.
 
@@ -26,20 +26,19 @@ class Tensor(CompNode):
         For constants, this parameter is not required.
     """
     def __init__(self, value: np.ndarray | float, name: str = None):
-        # Only allow numpy arrays or float
+        # only allow numpy arrays or float
         if not isinstance(value, (np.ndarray, float)):
             raise TypeError("Value must be a NumPy array or a float.")
         self.tensor = value
         self.name = name
     
     @property
-    def signature(self):
+    def _signature(self):
         return id(self)
 
-    def forward(self, cc = True) -> np.ndarray | float:
+    def forward(self, cc = True):
         if cc: # clear cache flag
-            self.clear_cache()
-        return self.tensor
+            self.clear_graph_cache()
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
         if w_r_t == self.name:

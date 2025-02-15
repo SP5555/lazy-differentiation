@@ -1,11 +1,21 @@
 from abc import ABC, abstractmethod
 from numpy import ndarray
 
+GLOBAL_GRAPH_CACHE = {}
+
 class CompNode(ABC):
     """
     Computational Node
     =====
     """
+    @abstractmethod
+    # returns a Unique signature to be stored in graph cache
+    def _signature(self):
+        pass
+
+    def clear_graph_cache(self):
+        GLOBAL_GRAPH_CACHE.clear()
+
     def __init__(self):
         self.tensor = None
 
@@ -15,7 +25,8 @@ class CompNode(ABC):
         Forward Pass
         =====
 
-        This method is responsible for performing the forward pass computation.
+        This method is responsible for performing the forward pass computation. \\
+        Call `evaluate()` to retrive the calculated value.
         """
         pass
 
@@ -25,7 +36,8 @@ class CompNode(ABC):
         Backward Pass
         =====
 
-        This method calculates the gradients during the backward pass.
+        This method calculates the gradients during the backward pass
+        and updates the partials of base tensors with the computed gradients.
 
         Parameters
         ----------

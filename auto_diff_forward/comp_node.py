@@ -10,27 +10,23 @@ class CompNode(ABC):
     """
     @abstractmethod
     # returns a Unique signature to be stored in graph cache
-    def signature(self):
+    def _signature(self):
         pass
 
-    def clear_cache(self):
+    def clear_graph_cache(self):
         GLOBAL_GRAPH_CACHE.clear()
 
+    def __init__(self):
+        self.tensor = None
+
     @abstractmethod
-    def forward(self) -> ndarray | float:
+    def forward(self):
         """
         Forward Pass
         =====
 
-        This method is responsible for performing the forward pass computation.
-        It takes the inputs to the operation (Tensors or Operations) and returns
-        the resulting value.
-
-        Returns
-        -------
-        ndarray or float
-            The result of the forward pass computation, typically a scalar
-            or an array representing the output of the operation.
+        This method is responsible for performing the forward pass computation. \\
+        Call `evaluate()` to retrive the calculated value.
         """
         pass
 
@@ -57,9 +53,19 @@ class CompNode(ABC):
         """
         pass
 
-    @property
-    def value(self):
-        return self.forward()
+    def evaluate(self) -> ndarray | float:
+        """
+        Evaluate
+        =====
+
+        This method can be called only after forward pass.
+
+        Returns
+        -------
+        np.ndarray | float
+            The value of the expression computed by forward pass.
+        """
+        return self.tensor
 
     def __neg__(self):
         from .operations import Negate

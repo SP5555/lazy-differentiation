@@ -1,17 +1,54 @@
+from abc import abstractmethod
 import numpy as np
-from .comp_node import CompNode
+from .comp_node import CompNode, GLOBAL_GRAPH_CACHE
 
 class Operation(CompNode):
-    pass
+
+    def __new__(cls, *arg, **kwargs):
+        sig = cls._signature(*arg, **kwargs)
+        if sig in GLOBAL_GRAPH_CACHE:
+            GLOBAL_GRAPH_CACHE[sig]._is_repeated = True
+            return GLOBAL_GRAPH_CACHE[sig]
+        instance = super().__new__(cls)
+        GLOBAL_GRAPH_CACHE[sig] = instance
+        instance._is_repeated = False
+        return instance
+    
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def _signature(cls, *args):
+        return (id(cls), *(id(arg) for arg in args))
+    
+    # perform forward pass computation
+    # calls compute_forward() if cached tensor is not available
+    # forward call auto-clears the global cache
+    def forward(self, cc = True):
+        if cc: # clear cache flag
+            self.clear_graph_cache()
+        if self.tensor is None:
+            self.compute_forward()
+
+    @abstractmethod
+    def backward(self):
+        pass
+
+    @abstractmethod
+    # computes the forward pass and caches the resulting tensor
+    def compute_forward(self):
+        pass
 
 class Negate(Operation):
 
     def __init__(self, A: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
 
-    def forward(self):
-        self.A.forward()
-        self.tensor = - self.A.tensor
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = -self.A.tensor
 
     def backward(self, seed: np.ndarray | float):
         # f = -A
@@ -21,48 +58,54 @@ class Negate(Operation):
 class Add(Operation):
 
     def __init__(self, A: CompNode, B: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
         self.B = B
 
-    def forward(self):
-        self.A.forward()
-        self.B.forward()
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
         self.tensor = self.A.tensor + self.B.tensor
 
     def backward(self, seed: np.ndarray | float):
         # f = A + B
-        # df/dA = 1 * dA/dA
-        # df/dB = 1 * dB/dB
+        # df/dA = dA/dA
+        # df/dB = dB/dB
         self.A.backward(seed)
         self.B.backward(seed)
 
 class Subtract(Operation):
 
     def __init__(self, A: CompNode, B: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
         self.B = B
 
-    def forward(self):
-        self.A.forward()
-        self.B.forward()
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
         self.tensor = self.A.tensor - self.B.tensor
 
     def backward(self, seed: np.ndarray | float):
         # f = A - B
-        # df/dA = 1 * dA/dA
-        # df/dB = -1 * dB/dB
+        # df/dA = dA/dA
+        # df/dB = -dB/dB
         self.A.backward(seed)
         self.B.backward(-seed)
 
 class Multiply(Operation):
 
     def __init__(self, A: CompNode, B: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
         self.B = B
 
-    def forward(self):
-        self.A.forward()
-        self.B.forward()
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
         self.tensor = self.A.tensor * self.B.tensor
 
     def backward(self, seed: np.ndarray | float):
@@ -75,29 +118,33 @@ class Multiply(Operation):
 class Divide(Operation):
 
     def __init__(self, A: CompNode, B: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
         self.B = B
 
-    def forward(self):
-        self.A.forward()
-        self.B.forward()
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
         self.tensor = self.A.tensor / self.B.tensor
 
     def backward(self, seed: np.ndarray | float):
         # f = A/B
-        # df/dA = 1/B * dA/dA
-        # df/dB = -A/(B^2) * dB/dB
+        # df/dA = 1 / B * dA/dA
+        # df/dB = -A / (B^2) * dB/dB
         self.A.backward(seed / self.B.tensor)
-        self.B.backward(- self.A.tensor * seed / (self.B.tensor ** 2))
+        self.B.backward(-self.A.tensor * seed / (self.B.tensor ** 2))
 
 # Exponential
 class Exp(Operation):
 
     def __init__(self, A: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
 
-    def forward(self):
-        self.A.forward()
+    def compute_forward(self):
+        self.A.forward(cc=False)
         self.tensor = np.exp(self.A.tensor)
 
     def backward(self, seed: np.ndarray | float):
@@ -109,26 +156,46 @@ class Exp(Operation):
 class Log(Operation):
 
     def __init__(self, A: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
 
-    def forward(self):
-        self.A.forward()
+    def compute_forward(self):
+        self.A.forward(cc=False)
         self.tensor = np.log(self.A.tensor)
 
     def backward(self, seed: np.ndarray | float):
         # f = ln(A)
-        # df/dA = 1/A * dA/dA
+        # df/dA = 1 / A * dA/dA
         self.A.backward(seed / self.A.tensor)
+
+class Square(Operation):
+
+    def __init__(self, A: CompNode):
+        if self._is_repeated: return
+        super().__init__()
+        self.A = A
+
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = self.A.tensor ** 2
+
+    def backward(self, seed: np.ndarray | float):
+        # f = A^2
+        # df/dA = 2 * A * dA/dA
+        self.A.backward(2 * self.tensor * seed)
 
 class Power(Operation):
 
     def __init__(self, A: CompNode, B: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
         self.B = B
 
-    def forward(self):
-        self.A.forward()
-        self.B.forward()
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
         self.tensor = self.A.tensor ** self.B.tensor
 
     def backward(self, seed: np.ndarray | float):
@@ -141,27 +208,47 @@ class Power(Operation):
 class Sqrt(Operation):
 
     def __init__(self, A: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
 
-    def forward(self):
-        self.A.forward()
+    def compute_forward(self):
+        self.A.forward(cc=False)
         self.tensor = np.sqrt(self.A.tensor)
 
     def backward(self, seed: np.ndarray | float):
         # f = sqrt(A)
-        # df/dA = 1/(2sqrt(A)) * dA/dA
-        self.A.backward(seed / (2.0 * np.sqrt(self.A.tensor)))
+        # df/dA = 1 / (2 * sqrt(A)) * dA/dA
+        self.A.backward(0.5 * seed / self.tensor)
 
 class Tanh(Operation):
 
     def __init__(self, A: CompNode):
+        if self._is_repeated: return
+        super().__init__()
         self.A = A
 
-    def forward(self):
-        self.A.forward()
+    def compute_forward(self):
+        self.A.forward(cc=False)
         self.tensor = np.tanh(self.A.tensor)
 
     def backward(self, seed: np.ndarray | float):
         # f = tanh(A)
-        # df/dA = (1 - (tanh(A))^2) * dA/dA
+        # df/dA = (1 - [tanh(A)]^2) * dA/dA
         self.A.backward((1.0 - (self.tensor ** 2)) * seed)
+
+class Sigmoid(Operation):
+
+    def __init__(self, A: CompNode):
+        if self._is_repeated: return
+        super().__init__()
+        self.A = A
+
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = (np.tanh(self.A.tensor / 2) + 1) / 2
+
+    def backward(self, seed: np.ndarray | float):
+        # f = sigmoid(A)
+        # df/dA = sigmoid(A) * (1 - sigmoid(A)) * dA/dA
+        self.A.backward(self.tensor * (1 - self.tensor) * seed)

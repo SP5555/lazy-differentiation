@@ -2,47 +2,41 @@ from abc import abstractmethod
 import numpy as np
 from .comp_node import CompNode, GLOBAL_GRAPH_CACHE
 
-# This is some division by zero prevention trickery
-# Disabled (permanently? Yes. probably don't need it.)
-EPSILON = 0.0
-
 class Operation(CompNode):
 
     def __new__(cls, *arg, **kwargs):
-        sig = cls.signature(*arg, **kwargs)
+        sig = cls._signature(*arg, **kwargs)
         if sig in GLOBAL_GRAPH_CACHE:
             GLOBAL_GRAPH_CACHE[sig]._is_repeated = True
             return GLOBAL_GRAPH_CACHE[sig]
         instance = super().__new__(cls)
-        instance._cached_value = None
         GLOBAL_GRAPH_CACHE[sig] = instance
         instance._is_repeated = False
         return instance
 
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self):
+        super().__init__()
 
     @classmethod
-    def signature(cls, *args):
+    def _signature(cls, *args):
         return (id(cls), *(id(arg) for arg in args))
 
+    # perform forward pass computation
+    # calls compute_forward() if cached tensor is not available
+    # forward call auto-clears the global cache
+    def forward(self, cc = True):
+        if cc: # clear cache flag
+            self.clear_graph_cache()
+        if self.tensor is None:
+            self.compute_forward()
+
     @abstractmethod
-    # the true compute call
-    def compute_forward(self) -> np.ndarray | float:
+    def backward(self, w_r_t: str) -> np.ndarray | float:
         pass
 
-    # forward returns the cached value
-    # calls compute_forward() if cached value is not available
-    # forward call now auto-clears the global cache
-    def forward(self, cc = True) -> np.ndarray | float:
-        if cc: # clear cache flag
-            self.clear_cache()
-        if self._cached_value is None:
-            self._cached_value = self.compute_forward()
-        return self._cached_value
-
     @abstractmethod
-    def backward(self) -> np.ndarray | float:
+    # computes the forward pass and caches the resulting tensor
+    def compute_forward(self):
         pass
 
 class Negate(Operation):
@@ -52,15 +46,14 @@ class Negate(Operation):
         super().__init__()
         self.A = A
     
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-
-        return -1 * self.A_tmp
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = -self.A.tensor
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = -f(x)
-        # h'(x) = -1 * f'(x)
-        return -1 * self.A.backward(w_r_t)
+        # h'(x) = -f'(x)
+        return -self.A.backward(w_r_t)
 
 class Add(Operation):
 
@@ -70,12 +63,11 @@ class Add(Operation):
         self.A = A
         self.B = B
     
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-        self.B_tmp = self.B.forward(cc=False)
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
+        self.tensor = self.A.tensor + self.B.tensor
 
-        return self.A_tmp + self.B_tmp
-    
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x) + g(x)
         # h'(x) = f'(x) + g'(x)
@@ -89,12 +81,11 @@ class Subtract(Operation):
         self.A = A
         self.B = B
 
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-        self.B_tmp = self.B.forward(cc=False)
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
+        self.tensor = self.A.tensor - self.B.tensor
 
-        return self.A_tmp - self.B_tmp
-    
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x) - g(x)
         # h'(x) = f'(x) - g'(x)
@@ -108,16 +99,15 @@ class Multiply(Operation):
         self.A = A
         self.B = B
 
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-        self.B_tmp = self.B.forward(cc=False)
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
+        self.tensor = self.A.tensor * self.B.tensor
 
-        return self.A_tmp * self.B_tmp
-    
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x)g(x)
         # h'(x) = f(x)g'(x) + f'(x)g(x)
-        return self.A_tmp * self.B.backward(w_r_t) + self.A.backward(w_r_t) * self.B_tmp
+        return self.A.tensor * self.B.backward(w_r_t) + self.A.backward(w_r_t) * self.B.tensor
 
 class Divide(Operation):
 
@@ -127,17 +117,16 @@ class Divide(Operation):
         self.A = A
         self.B = B
 
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-        self.B_tmp = self.B.forward(cc=False)
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
+        self.tensor = self.A.tensor / self.B.tensor
 
-        return self.A_tmp / self.B_tmp
-    
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x)/g(x)
         # h'(x) = [g(x)f'(x) - f(x)g'(x)] / (g(x)^2)
-        B_sq = self.B_tmp * self.B_tmp
-        return (self.B_tmp * self.A.backward(w_r_t) - self.A_tmp * self.B.backward(w_r_t)) / B_sq
+        B_sq = self.B.tensor ** 2
+        return (self.B.tensor * self.A.backward(w_r_t) - self.A.tensor * self.B.backward(w_r_t)) / B_sq
     
 # Exponential
 class Exp(Operation):
@@ -147,15 +136,14 @@ class Exp(Operation):
         super().__init__()
         self.A = A
 
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-
-        return np.exp(self.A_tmp)
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = np.exp(self.A.tensor)
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = e^f(x)
         # h'(x) = e^f(x) * f'(x)
-        return self.forward(cc=False) * self.A.backward(w_r_t)
+        return self.tensor * self.A.backward(w_r_t)
 
 # Natural Log
 class Log(Operation):
@@ -165,15 +153,30 @@ class Log(Operation):
         super().__init__()
         self.A = A
 
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-
-        return np.log(self.A_tmp)
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = np.log(self.A.tensor)
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = ln(f(x))
-        # h'(x) = 1/f(x) * f'(x)
-        return self.A.backward(w_r_t) / self.A_tmp
+        # h'(x) = 1 / f(x) * f'(x)
+        return self.A.backward(w_r_t) / self.A.tensor
+
+class Square(Operation):
+
+    def __init__(self, A: CompNode):
+        if self._is_repeated: return
+        super().__init__()
+        self.A = A
+
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = self.A.tensor ** 2
+
+    def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = f(x)^2
+        # h'(x) = 2 * f(x) * f'(x)
+        return 2 * self.tensor * self.A.backward(w_r_t)
 
 class Power(Operation):
 
@@ -183,17 +186,16 @@ class Power(Operation):
         self.B = B
         self.E = E
 
-    def compute_forward(self) -> np.ndarray | float:
-        self.B_tmp = self.B.forward(cc=False)
-        self.E_tmp = self.E.forward(cc=False)
-
-        return np.power(self.B_tmp, self.E_tmp)
+    def compute_forward(self):
+        self.B.forward(cc=False)
+        self.E.forward(cc=False)
+        self.tensor = self.B.tensor ** self.E.tensor
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # This is some witchcraft I never learned anywhere.
         # h(x) = f(x)^g(x)
         # h'(x) = f(x)^g(x) (g'(x)ln(f(x)) + g(x)f'(x)/f(x))
-        return self.forward(cc=False) * (self.E.backward(w_r_t) * np.log(self.B_tmp + EPSILON) + self.E_tmp * self.B.backward(w_r_t) / (self.B_tmp + EPSILON))
+        return self.tensor * (self.E.backward(w_r_t) * np.log(self.B.tensor) + self.E.tensor * self.B.backward(w_r_t) / (self.B.tensor))
 
 class Sqrt(Operation):
 
@@ -202,15 +204,14 @@ class Sqrt(Operation):
         super().__init__()
         self.A = A
 
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-
-        return np.sqrt(self.A_tmp)
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = np.sqrt(self.A.tensor)
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = sqrt(f(x))
-        # h'(x) = 1/(2 * sqrt(f(x))) * f'(x)
-        return 0.5 / self.forward(cc=False) * self.A.backward(w_r_t)
+        # h'(x) = 1 / (2 * sqrt(f(x))) * f'(x)
+        return 0.5 * self.A.backward(w_r_t) / self.tensor
 
 class Tanh(Operation):
 
@@ -219,15 +220,14 @@ class Tanh(Operation):
         super().__init__()
         self.A = A
 
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-
-        return np.tanh(self.A_tmp)
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = np.tanh(self.A.tensor)
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = tanh(f(x))
         # h'(x) = (1 - [tanh(f(x))]^2) * f'(x)
-        return (1 - self.forward(cc=False) ** 2) * self.A.backward(w_r_t)
+        return (1 - self.tensor ** 2) * self.A.backward(w_r_t)
 
 class Sigmoid(Operation):
 
@@ -236,12 +236,11 @@ class Sigmoid(Operation):
         super().__init__()
         self.A = A
     
-    def compute_forward(self) -> np.ndarray | float:
-        self.A_tmp = self.A.forward(cc=False)
-
-        return (np.tanh(self.A_tmp / 2) + 1) / 2
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = (np.tanh(self.A.tensor / 2) + 1) / 2
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = sigmoid(f(x))
         # h'(x) = sigmoid(f(x)) * (1 - sigmoid(f(x))) * f'(x)
-        return self.forward(cc=False) * (1 - self.forward(cc=False)) * self.A.backward(w_r_t)
+        return self.tensor * (1 - self.tensor) * self.A.backward(w_r_t)

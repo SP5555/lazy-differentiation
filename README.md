@@ -2,7 +2,9 @@
 
 **L**ow-effort **A**utomatic **Z**eroing **Y**our-workload Differentiation module for backpropagation in neural networks.
 
-Test code is here: [main.py](auto_diff/dev/main.py)
+Forward Accumulation test code: [auto_diff_forward/dev/main.py](auto_diff_forward/dev/main.py)
+
+Reverse Accumulation test code: [auto_diff_reverse/dev/main.py](auto_diff_reverse/dev/main.py)
 
 ## First of all, what is the problem?
 
@@ -30,6 +32,8 @@ You can choose to hardcode this entire mess into your code... but committing Sep
 
 ## So, how does **Automatic Differentiation** save our lives?
 
+*Note: This example uses `auto_diff_forward` module (Forward Accumulation mode).*
+
 Summon the modules:
 
 ```python
@@ -54,10 +58,13 @@ Construct the expression. Throw everything together like this:
 Then compute, print them out and see the magic:
 
 ```python
+    # forward to situate the tensors in the expression tree
+    expression.forward()
+
     np.set_printoptions(precision=8)
 
     # forward pass (Grade 1 math)
-    print(f"Forward: {expression.forward()}")
+    print(f"Forward: {expression.evaluate()}")
 
     # Easy Lazy Derivatives
 
@@ -95,3 +102,11 @@ AWESOME, right?! Yeah! :fire:
 Under the hood, it is just an *absurd* amount of Chain Rule doing their own things. There is no magic. Sadge.
 
 No manual calculus, no more headaches. **Welcome to Automatic Differentiation!**
+
+# Modules
+
+Oops, these `README.md`s only have how-to-use in it. Hopefully, more details are added tomorrow. ~~Tomorrow never comes.~~
+
+Forward Accumulation Mode: [auto_diff_forward/README.md](auto_diff_forward/README.md)
+
+Reverse Accumulation Mode: [auto_diff_reverse/README.md](auto_diff_reverse/README.md)
