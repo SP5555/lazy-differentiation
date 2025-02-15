@@ -208,6 +208,8 @@ class Sqrt(Operation):
         return np.sqrt(self.A_tmp)
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = sqrt(f(x))
+        # h'(x) = 1/(2 * sqrt(f(x))) * f'(x)
         return 0.5 / self.forward(cc=False) * self.A.backward(w_r_t)
 
 class Tanh(Operation):
@@ -223,6 +225,8 @@ class Tanh(Operation):
         return np.tanh(self.A_tmp)
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = tanh(f(x))
+        # h'(x) = (1 - [tanh(f(x))]^2) * f'(x)
         return (1 - self.forward(cc=False) ** 2) * self.A.backward(w_r_t)
 
 class Sigmoid(Operation):
@@ -238,4 +242,6 @@ class Sigmoid(Operation):
         return (np.tanh(self.A_tmp / 2) + 1) / 2
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = sigmoid(f(x))
+        # h'(x) = sigmoid(f(x)) * (1 - sigmoid(f(x))) * f'(x)
         return self.forward(cc=False) * (1 - self.forward(cc=False)) * self.A.backward(w_r_t)
