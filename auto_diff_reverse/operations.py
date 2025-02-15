@@ -5,28 +5,30 @@ class Operation(CompNode):
     pass
 
 class Negate(Operation):
+
     def __init__(self, A: CompNode):
         self.A = A
-    
+
     def forward(self):
         self.A.forward()
         self.tensor = - self.A.tensor
-    
+
     def backward(self, seed: np.ndarray | float):
         # f = -A
         # df/dA = -dA/dA
         self.A.backward(-seed)
 
 class Add(Operation):
+
     def __init__(self, A: CompNode, B: CompNode):
         self.A = A
         self.B = B
-    
+
     def forward(self):
         self.A.forward()
         self.B.forward()
         self.tensor = self.A.tensor + self.B.tensor
-    
+
     def backward(self, seed: np.ndarray | float):
         # f = A + B
         # df/dA = 1 * dA/dA
@@ -35,15 +37,16 @@ class Add(Operation):
         self.B.backward(seed)
 
 class Subtract(Operation):
+
     def __init__(self, A: CompNode, B: CompNode):
         self.A = A
         self.B = B
-    
+
     def forward(self):
         self.A.forward()
         self.B.forward()
         self.tensor = self.A.tensor - self.B.tensor
-    
+
     def backward(self, seed: np.ndarray | float):
         # f = A - B
         # df/dA = 1 * dA/dA
@@ -52,15 +55,16 @@ class Subtract(Operation):
         self.B.backward(-seed)
 
 class Multiply(Operation):
+
     def __init__(self, A: CompNode, B: CompNode):
         self.A = A
         self.B = B
-    
+
     def forward(self):
         self.A.forward()
         self.B.forward()
         self.tensor = self.A.tensor * self.B.tensor
-    
+
     def backward(self, seed: np.ndarray | float):
         # f = AB
         # df/dA = B * dA/dA
@@ -69,15 +73,16 @@ class Multiply(Operation):
         self.B.backward(self.A.tensor * seed)
 
 class Divide(Operation):
+
     def __init__(self, A: CompNode, B: CompNode):
         self.A = A
         self.B = B
-    
+
     def forward(self):
         self.A.forward()
         self.B.forward()
         self.tensor = self.A.tensor / self.B.tensor
-    
+
     def backward(self, seed: np.ndarray | float):
         # f = A/B
         # df/dA = 1/B * dA/dA
@@ -116,15 +121,16 @@ class Log(Operation):
         self.A.backward(seed / self.A.tensor)
 
 class Power(Operation):
+
     def __init__(self, A: CompNode, B: CompNode):
         self.A = A
         self.B = B
-    
+
     def forward(self):
         self.A.forward()
         self.B.forward()
         self.tensor = self.A.tensor ** self.B.tensor
-    
+
     def backward(self, seed: np.ndarray | float):
         # f = A^B
         # df/dA = B * A^(B-1) * dA/dA
@@ -145,3 +151,17 @@ class Sqrt(Operation):
         # f = sqrt(A)
         # df/dA = 1/(2sqrt(A)) * dA/dA
         self.A.backward(seed / (2.0 * np.sqrt(self.A.tensor)))
+
+class Tanh(Operation):
+
+    def __init__(self, A: CompNode):
+        self.A = A
+
+    def forward(self):
+        self.A.forward()
+        self.tensor = np.tanh(self.A.tensor)
+
+    def backward(self, seed: np.ndarray | float):
+        # f = tanh(A)
+        # df/dA = (1 - (tanh(A))^2) * dA/dA
+        self.A.backward((1.0 - (self.tensor ** 2)) * seed)

@@ -12,11 +12,12 @@ def main():
 
     a = Tensor(np.array([1, 2, 3]))
     b = Tensor(np.array([4, 5, 6]))
-    three = Tensor(3.0) # wrap inside Tensor if you wanna use a constant
+    two = Tensor(2.0) # wrap inside Tensor if you wanna use a constant
 
     seed = np.array([1, 1, 1])
 
-    expression = Sqrt(a ** b) / b
+    # expression = Sqrt(a ** b) / b
+    expression = Log(b) * Tanh(Sqrt(a/b)) + a ** Sqrt(two * b)
 
     np.set_printoptions(precision=8)
 

@@ -10,7 +10,7 @@ class CompNode(ABC):
         self.tensor = None
 
     @abstractmethod
-    def forward(self) -> ndarray | float:
+    def forward(self):
         """
         Forward Pass
         =====
@@ -20,7 +20,7 @@ class CompNode(ABC):
         pass
 
     @abstractmethod
-    def backward(self, seed: ndarray | float) -> ndarray | float:
+    def backward(self, seed: ndarray | float):
         """
         Backward Pass
         =====
