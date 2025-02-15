@@ -58,6 +58,8 @@ class Negate(Operation):
         return -1 * self.A_tmp
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = -f(x)
+        # h'(x) = -1 * f'(x)
         return -1 * self.A.backward(w_r_t)
 
 class Add(Operation):
@@ -75,6 +77,8 @@ class Add(Operation):
         return self.A_tmp + self.B_tmp
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = f(x) + g(x)
+        # h'(x) = f'(x) + g'(x)
         return self.A.backward(w_r_t) + self.B.backward(w_r_t)
 
 class Subtract(Operation):
@@ -92,6 +96,8 @@ class Subtract(Operation):
         return self.A_tmp - self.B_tmp
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = f(x) - g(x)
+        # h'(x) = f'(x) - g'(x)
         return self.A.backward(w_r_t) - self.B.backward(w_r_t)
 
 class Multiply(Operation):
@@ -109,6 +115,8 @@ class Multiply(Operation):
         return self.A_tmp * self.B_tmp
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = f(x)g(x)
+        # h'(x) = f(x)g'(x) + f'(x)g(x)
         return self.A_tmp * self.B.backward(w_r_t) + self.A.backward(w_r_t) * self.B_tmp
 
 class Divide(Operation):
@@ -126,6 +134,8 @@ class Divide(Operation):
         return self.A_tmp / self.B_tmp
     
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = f(x)/g(x)
+        # h'(x) = [g(x)f'(x) - f(x)g'(x)] / (g(x)^2)
         B_sq = self.B_tmp * self.B_tmp
         return (self.B_tmp * self.A.backward(w_r_t) - self.A_tmp * self.B.backward(w_r_t)) / B_sq
     
@@ -143,6 +153,8 @@ class Exp(Operation):
         return np.exp(self.A_tmp)
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # h(x) = e^f(x)
+        # h'(x) = e^f(x) * f'(x)
         return self.forward(cc=False) * self.A.backward(w_r_t)
 
 # Natural Log
@@ -159,7 +171,9 @@ class Log(Operation):
         return np.log(self.A_tmp)
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
-        return 1 / self.A_tmp * self.A.backward(w_r_t)
+        # h(x) = ln(f(x))
+        # h'(x) = 1/f(x) * f'(x)
+        return self.A.backward(w_r_t) / self.A_tmp
 
 class Power(Operation):
 
@@ -175,10 +189,10 @@ class Power(Operation):
 
         return np.power(self.B_tmp, self.E_tmp)
 
-    # This is some witchcraft I never learned anywhere.
-    # h(x) = f(x)^g(x)
-    # h'(x) = f(x)^g(x) (g'(x)ln(f(x)) + g(x)f'(x)/f(x))
     def backward(self, w_r_t: str) -> np.ndarray | float:
+        # This is some witchcraft I never learned anywhere.
+        # h(x) = f(x)^g(x)
+        # h'(x) = f(x)^g(x) (g'(x)ln(f(x)) + g(x)f'(x)/f(x))
         return self.forward(cc=False) * (self.E.backward(w_r_t) * np.log(self.B_tmp + EPSILON) + self.E_tmp * self.B.backward(w_r_t) / (self.B_tmp + EPSILON))
 
 class Sqrt(Operation):

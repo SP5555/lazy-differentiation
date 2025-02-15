@@ -26,12 +26,11 @@ class CompNode(ABC):
         =====
 
         This method calculates the gradients during the backward pass.
-        Seed
 
         Parameters
         ----------
         seed : np.ndarray | float
-            The gradient of loss used to propagate backwards. \\
+            The gradient of loss used to propagate backwards.
             Set seed to `1` or numpy array of `1` with equivalent
             dimensions for normal gradient calculation.
         """

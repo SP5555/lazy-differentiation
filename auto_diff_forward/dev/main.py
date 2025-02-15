@@ -17,8 +17,8 @@ def main():
 
     # expression = (a + b) ** (a / b)
     # expression = Sigmoid(a/b)
-    # expression = Log(b) * Tanh(Sqrt(a/b)) + a ** Sqrt(two * b)
-    expression = (a*b) + (a*b) * (a*b)
+    expression = Log(b) * Tanh(Sqrt(a/b)) + a ** Sqrt(two * b)
+    # expression = (a*b) + (a*b) * (a*b)
     # expression = Tanh(a)
 
     # testing cached values
