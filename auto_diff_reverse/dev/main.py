@@ -15,21 +15,33 @@ def main():
     c = Tensor(np.array([7, 8, 9]))
     two = Tensor(2.0) # wrap inside Tensor if you wanna use a constant
 
+    # neural network layer dummy
+    Ws = Tensor(np.array([[1, -2, 3], [-4, 5, -6], [-1, 2, 3], [4, 5, -6]]))
+    As = Tensor(np.array([[0.2], [0.0], [0.9]]))
+    Bs = Tensor(np.array([[1], [-2], [2], [-1]]))
+
     # expression = (a + b) ** (a / b)
     # expression = Sigmoid(a/b) - Exp(b) + Square(a)
     # expression = Log(b) * Tanh(Sqrt(a/b)) + a ** Sqrt(two * b)
-    expression = (a*b) + (a*b) * (a*b)
+    # expression = (a*b) + (a*b) * (a*b)
     # expression = a
 
+    expression = Sigmoid(Matmul(Ws, As) + Bs)
+
     expression.forward()
-    expression.backward(seed=np.array([1, 1, 1])) # seed is gradient of loss
+    # seed is gradient of loss
+    # expression.backward(seed=np.array([1, 1, 1]))
+    expression.backward(seed=np.array([[-0.4], [0.0], [-0.6], [0.6]]))
 
     np.set_printoptions(precision=8)
 
-    print(f"Forward: {expression.evaluate()}")
-    print(f"df/da  : {a.grad}")
-    print(f"df/db  : {b.grad}")
-    print(f"df/dc  : {c.grad}")
+    print(f"Forward:\n{expression.evaluate()}")
+    # print(f"df/da  :\n{a.grad}")
+    # print(f"df/db  :\n{b.grad}")
+    # print(f"df/dc  :\n{c.grad}")
+    print(f"df/dW:\n{Ws.grad}")
+    print(f"df/dA:\n{As.grad}")
+    print(f"df/dB:\n{Bs.grad}")
 
     a.zero_grad()
     b.zero_grad()

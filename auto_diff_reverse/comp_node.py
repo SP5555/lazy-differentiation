@@ -17,7 +17,7 @@ class CompNode(ABC):
         GLOBAL_GRAPH_CACHE.clear()
 
     def __init__(self):
-        self.tensor = None
+        self.tensor: ndarray | float = None
 
     @abstractmethod
     def forward(self):

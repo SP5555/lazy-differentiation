@@ -252,3 +252,23 @@ class Sigmoid(Operation):
         # f = sigmoid(A)
         # df/dA = sigmoid(A) * (1 - sigmoid(A)) * dA/dA
         self.A.backward(self.tensor * (1 - self.tensor) * seed)
+
+# Dot product
+class Matmul(Operation):
+    def __init__(self, A: CompNode, B: CompNode):
+        if self._is_repeated: return
+        super().__init__()
+        self.A = A
+        self.B = B
+
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
+        self.tensor = np.matmul(self.A.tensor, self.B.tensor)
+
+    def backward(self, seed: np.ndarray | float):
+        # Z = A dot B
+        # dZ/dA = dZ/dZ dot B^T
+        # dZ/dB = A^T dot dZ/dZ
+        self.A.backward(np.matmul(seed, self.B.tensor.T))
+        self.B.backward(np.matmul(self.A.tensor.T, seed))
