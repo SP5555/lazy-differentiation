@@ -41,7 +41,7 @@ class Tensor(CompNode):
             self.clear_graph_cache()
     
     def backward(self, seed: np.ndarray | float):
-        self.partial += seed
+        self.partial = self.partial + seed
 
     @property
     def grad(self):
