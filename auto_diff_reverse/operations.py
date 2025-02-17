@@ -306,12 +306,5 @@ class Softmax(Operation):
         # dL/dz_i = S_i * ( dL/dS_i - Sum[ S_j * dL/dS_j ] )   // break down delta_ij term
         # dL/dz_i = S_i * ( seed_i - Sum[ S_j * seed_j ] )
 
-        # this is softmax
-        S = self.tensor
-
-        # this line took years off my lifespan
-        dL_dz = S * (seed - np.sum(S * seed, axis = 0, keepdims=True))
-
-        # this backward pass call just accumulates into partials
-        # because all calculations are already done inside dL/dz term 
-        self.A.backward(dL_dz)
+        # this line took years off my lifespan 
+        self.A.backward(self.tensor * (seed - np.sum(self.tensor * seed, axis = 0, keepdims=True)))
