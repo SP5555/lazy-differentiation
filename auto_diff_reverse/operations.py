@@ -272,3 +272,46 @@ class Matmul(Operation):
         # dZ/dB = A^T dot dZ/dZ
         self.A.backward(np.matmul(seed, self.B.tensor.T))
         self.B.backward(np.matmul(self.A.tensor.T, seed))
+
+class Softmax(Operation):
+    # Softmax is one hell of a tricky activation
+    # to get the auto-diff system to work with
+    # due to its interdependencies between outputs
+    def __init__(self, A: CompNode):
+        if self._is_repeated: return
+        super().__init__()
+        self.A = A
+    
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        exp = np.exp(self.A.tensor - np.max(self.A.tensor, axis=0, keepdims=True))
+        self.tensor = exp / np.sum(exp, axis=0, keepdims=True)
+    
+    def backward(self, seed: np.ndarray | float):
+        # math
+        # S_i is softmax(z_i)
+        # Jacobian = diag(S) - S dot S.T
+        # where each entry is
+        # dS_i/dz_j = S_i * (delta_ij - S_j)
+        # delta_ij is Kronecker delta term
+        # (Simply put, it is an entry in Identity matrix, either 0 or 1)
+
+        # dL/dS = seed
+        # dL/dz =  dS/dz dot dL/dS = Jacobian dot seed
+
+        # But, we can avoid constructing Jacobian (which would be a sweet 3D tensor nightmare)
+        # each input z's gradient dL/dz_i of dL/dz is given as follows:
+        # dL/dz_i = Sum[ S_i * ( delta_ij - S_j ) * dL/dS_j ]  // j goes through all output neurons
+        # dL/dz_i = S_i * Sum[ ( delta_ij - S_j ) * dL/dS_j ]  // factor out S_i
+        # dL/dz_i = S_i * ( dL/dS_i - Sum[ S_j * dL/dS_j ] )   // break down delta_ij term
+        # dL/dz_i = S_i * ( seed_i - Sum[ S_j * seed_j ] )
+
+        # this is softmax
+        S = self.tensor
+
+        # this line took years off my lifespan
+        dL_dz = S * (seed - np.sum(S * seed, axis = 0, keepdims=True))
+
+        # this backward pass call just accumulates into partials
+        # because all calculations are already done inside dL/dz term 
+        self.A.backward(dL_dz)
