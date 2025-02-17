@@ -103,10 +103,20 @@ Under the hood, it is just an *absurd* amount of Chain Rule doing their own thin
 
 No manual calculus, no more headaches. **Welcome to Automatic Differentiation!**
 
+# Dependencies
+
+- **Python 3.11** or **3.12**
+    - Not strictly required. Any recent version will work. But if something breaks, you know what to do.
+- **NumPy**
+
 # Modules
 
-Oops, these `README.md`s only have how-to-use in it. Hopefully, more details are added tomorrow. ~~Tomorrow never comes.~~
+There are two different versions that do the same thing, but with slight mathematical differences in how they accumulate gradients.
 
-Forward Accumulation Mode: [auto_diff_forward/README.md](auto_diff_forward/README.md)
+However, the reverse mode turns out to be more suited and is the preferred method for backpropagation in Neural Networks primarily due to its ability to deal with the gradient of loss.
 
-Reverse Accumulation Mode: [auto_diff_reverse/README.md](auto_diff_reverse/README.md)
+> Oops, these `README.md`s only have how-to-use in it. Hopefully, more details are added tomorrow. ~~Tomorrow never comes.~~
+
+- **Forward Accumulation Mode**: [auto_diff_forward/README.md](auto_diff_forward/README.md)
+
+- **Reverse Accumulation Mode**: [auto_diff_reverse/README.md](auto_diff_reverse/README.md)

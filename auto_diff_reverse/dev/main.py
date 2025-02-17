@@ -26,6 +26,9 @@ def main():
     # expression = (a*b) + (a*b) * (a*b)
     # expression = a
 
+    # you should broadcast Bs manually
+    # don't trust Numpy's auto broadcast feature Lol
+    # but yeah, this example doesn't need broadcasting
     expression = Sigmoid(Matmul(Ws, As) + Bs)
 
     expression.forward()
