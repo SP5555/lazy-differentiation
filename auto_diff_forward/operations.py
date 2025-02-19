@@ -176,7 +176,7 @@ class Square(Operation):
     def backward(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x)^2
         # h'(x) = 2 * f(x) * f'(x)
-        return 2 * self.tensor * self.A.backward(w_r_t)
+        return 2 * self.A.tensor * self.A.backward(w_r_t)
 
 class Power(Operation):
 

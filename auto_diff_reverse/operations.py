@@ -183,7 +183,7 @@ class Square(Operation):
     def backward(self, seed: np.ndarray | float):
         # f = A^2
         # df/dA = 2 * A * dA/dA
-        self.A.backward(2 * self.tensor * seed)
+        self.A.backward(2 * self.A.tensor * seed)
 
 class Power(Operation):
 
