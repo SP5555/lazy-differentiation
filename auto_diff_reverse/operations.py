@@ -399,3 +399,38 @@ class Softmax(Operation):
 
         # this line took years off my lifespan 
         self.A.backward(self.tensor * (seed - np.sum(self.tensor * seed, axis = 0, keepdims=True)))
+
+class Huber(Operation):
+
+    def __init__(self, A: CompNode, d: float):
+        if self._is_repeated: return
+        super().__init__()
+        self.A = A
+        self.d = d
+    
+    def compute_forward(self):
+        self.A.forward(cc=False)
+
+        # masks
+        mid = np.abs(self.A.tensor) <= self.d
+        pos = self.A.tensor > self.d
+        neg = self.A.tensor < -self.d
+
+        mid_expression = (0.5 * (self.A.tensor ** 2) * mid)
+        p_expression = self.d * (self.A.tensor - self.d/2) * pos
+        n_expression = self.d * (-self.A.tensor - self.d/2) * neg
+
+        self.tensor = mid_expression + p_expression + n_expression
+    
+    def backward(self, seed: np.ndarray | float):
+        # f = 1/2 * a^2         if |a| <= d
+        # f = d * (|a| - d/2)   if |a| > d
+        # df/dA = a * dA/dA     if |a| <= d
+        # df/dA =  d * dA/dA    if a > d
+        # df/dA = -d * dA/dA    if a < -d
+        mid_grad = self.A.tensor * (np.abs(self.A.tensor) <= self.d)
+        p_grad = self.d * (self.A.tensor > self.d)
+        n_grad = -self.d * (self.A.tensor < -self.d)
+
+        grad_A = mid_grad + p_grad + n_grad
+        self.A.backward(grad_A * seed)
