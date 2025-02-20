@@ -187,6 +187,26 @@ class Minimum(Operation):
         self.A.backward(A_g * seed)
         self.B.backward(B_g * seed)
 
+class Abs(Operation):
+
+    def __init__(self, A: CompNode):
+        super().__init__()
+        self.A = A
+    
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = np.abs(self.A.tensor)
+
+    def backward(self, seed: np.ndarray | float):
+        # f = Abs(A)
+        # df/dA =  1 * dA/dA    if A > 0
+        # df/dA = -1 * dA/dA    if A < 0
+        # if A == 0? I don't know man, do zero
+        # df/dA = 0 * dA/dA
+        grad_A = np.sign(self.A.tensor)
+        grad_A[self.A.tensor == 0] = 0
+        self.A.backward(grad_A * seed)
+
 # Exponential
 class Exp(Operation):
 
