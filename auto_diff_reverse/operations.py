@@ -207,6 +207,25 @@ class Abs(Operation):
         grad_A[self.A.tensor == 0] = 0
         self.A.backward(grad_A * seed)
 
+class Clip(Operation):
+
+    def __init__(self, A: CompNode, min: float, max: float):
+        super().__init__()
+        self.A = A
+        self.min = min
+        self.max = max
+
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = np.clip(self.A.tensor, self.min, self.max)
+
+    def backward(self, seed: np.ndarray | float):
+        # Gradient is zero where the tensor is clipped (outside the range)
+        grad = np.ones_like(self.A.tensor)
+        grad[self.A.tensor < self.min] = 0
+        grad[self.A.tensor > self.max] = 0
+        self.A.backward(grad * seed)
+
 # Exponential
 class Exp(Operation):
 

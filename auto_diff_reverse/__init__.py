@@ -1,4 +1,4 @@
-from .operations import Exp, Log, Square, Sqrt, Tanh, Sigmoid, Matmul, Softmax, Maximum, Minimum, Abs
+from .operations import Exp, Log, Square, Sqrt, Tanh, Sigmoid, Matmul, Softmax, Maximum, Minimum, Abs, Clip
 from .tensor import Tensor
 
 __all__ = ["Tensor",
@@ -12,4 +12,5 @@ __all__ = ["Tensor",
            "Softmax",
            "Maximum",
            "Minimum",
-           "Abs"]
+           "Abs",
+           "Clip"]
