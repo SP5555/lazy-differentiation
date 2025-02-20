@@ -135,6 +135,58 @@ class Divide(Operation):
         self.A.backward(seed / self.B.tensor)
         self.B.backward(-self.A.tensor * seed / (self.B.tensor ** 2))
 
+class Maximum(Operation):
+
+    def __init__(self, A: CompNode, B: CompNode):
+        super().__init__()
+        self.A = A
+        self.B = B
+
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
+        self.tensor = np.maximum(self.A.tensor, self.B.tensor)
+
+    def backward(self, seed: np.ndarray | float):
+        # f = Max(A, B)
+        # df/dA = 1 * dA/dA     if A > B
+        # df/dA = 0 * dA/dA     if A < B
+        # df/dB = 0 * dB/dB     if A > B
+        # df/dB = 1 * dB/dB     if A < B
+        # if A == B? ehh, impossible but just do
+        # df/dA = 0.5 * dA/dA
+        # df/dB = 0.5 * dB/dB
+        A_g = (self.A.tensor > self.B.tensor) + 0.5 * (self.A.tensor == self.B.tensor)
+        B_g = (self.A.tensor < self.B.tensor) + 0.5 * (self.A.tensor == self.B.tensor)
+        self.A.backward(A_g * seed)
+        self.B.backward(B_g * seed)
+
+class Minimum(Operation):
+
+    def __init__(self, A: CompNode, B: CompNode):
+        super().__init__()
+        self.A = A
+        self.B = B
+
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.B.forward(cc=False)
+        self.tensor = np.minimum(self.A.tensor, self.B.tensor)
+
+    def backward(self, seed: np.ndarray | float):
+        # f = Min(A, B)
+        # df/dA = 0 * dA/dA     if A > B
+        # df/dA = 1 * dA/dA     if A < B
+        # df/dB = 1 * dB/dB     if A > B
+        # df/dB = 0 * dB/dB     if A < B
+        # if A == B? again, just do
+        # df/dA = 0.5 * dA/dA
+        # df/dB = 0.5 * dB/dB
+        A_g = (self.A.tensor < self.B.tensor) + 0.5 * (self.A.tensor == self.B.tensor)
+        B_g = (self.A.tensor > self.B.tensor) + 0.5 * (self.A.tensor == self.B.tensor)
+        self.A.backward(A_g * seed)
+        self.B.backward(B_g * seed)
+
 # Exponential
 class Exp(Operation):
 
