@@ -21,12 +21,13 @@ class Tensor(CompNode):
         The value assigned to the tensor, used in both
         the forward and backward passes of the computation.
     """
-    def __init__(self, value: np.ndarray | float):
+    def __init__(self, value: np.ndarray | float, require_grad: bool = True):
         # only allow numpy arrays or float
         if not isinstance(value, (np.ndarray, float)):
             raise TypeError("Value must be a NumPy array or a float.")
         self.tensor = value
         self.partial = None
+        self.require_grad = require_grad
         if isinstance(self.tensor, np.ndarray):
             self.partial = np.zeros_like(self.tensor, dtype=np.float64)
         else:
@@ -41,7 +42,8 @@ class Tensor(CompNode):
             self.clear_graph_cache()
     
     def backward(self, seed: np.ndarray | float):
-        self.partial = np.add(self.partial, seed)
+        if self.require_grad:
+            self.partial = np.add(self.partial, seed)
 
     @property
     def grad(self):
