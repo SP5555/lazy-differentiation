@@ -27,8 +27,8 @@ class Operation(CompNode):
     def forward(self, cc = True):
         if cc: # clear cache flag
             self.clear_graph_cache()
-        if self.tensor is None:
-            self.compute_forward()
+        # if self.tensor is None:
+        self.compute_forward()
 
     @abstractmethod
     def backward(self):
