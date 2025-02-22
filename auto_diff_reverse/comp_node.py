@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 from numpy import ndarray
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .operations import Operation
+
 GLOBAL_GRAPH_CACHE = {}
 
 class CompNode(ABC):
@@ -13,11 +17,16 @@ class CompNode(ABC):
     def _signature(self):
         pass
 
-    def clear_graph_cache(self):
+    @staticmethod
+    def clear_graph_cache():
         GLOBAL_GRAPH_CACHE.clear()
 
     def __init__(self):
         self.tensor: ndarray | float = None
+        self.parent_op: set["Operation"] = set()
+
+    def add_parent_op(self, node: "Operation"):
+        self.parent_op.add(node)
 
     @abstractmethod
     def forward(self):

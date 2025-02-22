@@ -25,6 +25,7 @@ class Tensor(CompNode):
         # only allow numpy arrays or float
         if not isinstance(value, (np.ndarray, float)):
             raise TypeError("Value must be a NumPy array or a float.")
+        super().__init__()
         self.tensor = value
         self.partial = None
         self.require_grad = require_grad
@@ -36,6 +37,17 @@ class Tensor(CompNode):
     @property
     def _signature(self):
         return id(self)
+
+    def assign(self, value: np.ndarray | float):
+        if not isinstance(value, (np.ndarray, float)):
+            raise TypeError("Assigned value must be a NumPy array or a float.")
+        self.tensor = value
+        if isinstance(self.tensor, np.ndarray):
+            self.partial = np.zeros_like(self.tensor, dtype=np.float64)
+        else:
+            self.partial = 0.0
+        for parent in self.parent_op:
+            parent.mark_dirty()
 
     def forward(self, cc = True):
         if cc: # clear cache flag
