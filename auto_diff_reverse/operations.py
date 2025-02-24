@@ -19,7 +19,7 @@ class Operation(CompNode):
         self._dirty = True
 
     @classmethod
-    def _signature(cls, *args):
+    def _signature(cls, *args, **kwargs):
         return (id(cls), *(id(arg) for arg in args))
 
     def mark_dirty(self):
@@ -155,6 +155,7 @@ class Divide(Operation):
 class Maximum(Operation):
 
     def __init__(self, A: CompNode, B: CompNode):
+        if self._is_repeated: return
         super().__init__()
         self.A = A
         self.B = B
@@ -183,6 +184,7 @@ class Maximum(Operation):
 class Minimum(Operation):
 
     def __init__(self, A: CompNode, B: CompNode):
+        if self._is_repeated: return
         super().__init__()
         self.A = A
         self.B = B
@@ -211,6 +213,7 @@ class Minimum(Operation):
 class Abs(Operation):
 
     def __init__(self, A: CompNode):
+        if self._is_repeated: return
         super().__init__()
         self.A = A
         self.A.add_parent_op(self)
@@ -232,6 +235,7 @@ class Abs(Operation):
 class Clip(Operation):
 
     def __init__(self, A: CompNode, min: float, max: float):
+        if self._is_repeated: return
         super().__init__()
         self.A = A
         self.min = min
@@ -251,11 +255,17 @@ class Clip(Operation):
 
 class Mean(Operation):
 
-    def __init__(self, A: CompNode, axis=None, keepdims=False):
+    def __init__(self,
+                 A: CompNode,
+                 axis=None,
+                 keepdims=False,
+                 require_grad=True):
+        if self._is_repeated: return
         super().__init__()
         self.A = A
         self.axis = axis
         self.keepdims = keepdims
+        self.require_grad = require_grad
         self.A.add_parent_op(self)
 
     def compute_forward(self):
@@ -265,16 +275,23 @@ class Mean(Operation):
     def backward(self, seed: np.ndarray | float):
         # f = Mean(A) = 1/n * sum [ A_i ]
         # df/dA_j = 1/n * dA_j/dA_j
-        n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
-        self.A.backward(np.ones_like(self.A.tensor) / n * seed)
+        if self.require_grad:
+            n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
+            self.A.backward(np.ones_like(self.A.tensor) / n * seed)
 
 class Variance(Operation):
 
-    def __init__(self, A: CompNode, axis=None, keepdims=False):
+    def __init__(self,
+                 A: CompNode,
+                 axis=None,
+                 keepdims=False,
+                 require_grad=True):
+        if self._is_repeated: return
         super().__init__()
         self.A = A
         self.axis = axis
         self.keepdims = keepdims
+        self.require_grad = require_grad
         self.A.add_parent_op(self)
 
     def compute_forward(self):
@@ -291,8 +308,9 @@ class Variance(Operation):
         # df/dA_j = 1/n * 2 * A_j * dA_j/dA_j - 2   * Mean(A) * dMean(A)/dA_j * dA_j/dA_j
         #         = 2/n *     A_j * dA_j/dA_j - 2/n * Mean(A)                 * dA_j/dA_j
         #         = 2/n * ( A_j - Mean(A) ) * dA_j/dA_j
-        n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
-        self.A.backward(2 / n * (self.A.tensor - self.mean) * seed)
+        if self.require_grad:
+            n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
+            self.A.backward(2 / n * (self.A.tensor - self.mean) * seed)
 
 # Exponential
 class Exp(Operation):

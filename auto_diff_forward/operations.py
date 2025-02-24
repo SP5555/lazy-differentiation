@@ -18,7 +18,7 @@ class Operation(CompNode):
         super().__init__()
 
     @classmethod
-    def _signature(cls, *args):
+    def _signature(cls, *args, **kwargs):
         return (id(cls), *(id(arg) for arg in args))
 
     # perform forward pass computation
