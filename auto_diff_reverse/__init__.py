@@ -12,7 +12,9 @@ from .operations import (
     Maximum,
     Minimum,
     Abs,
-    Clip
+    Clip,
+    Mean,
+    Variance
 )
 
 __all__ = ["Tensor",
@@ -28,4 +30,6 @@ __all__ = ["Tensor",
            "Maximum",
            "Minimum",
            "Abs",
-           "Clip"]
+           "Clip",
+           "Mean",
+           "Variance"]

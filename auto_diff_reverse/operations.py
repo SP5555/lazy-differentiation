@@ -249,6 +249,51 @@ class Clip(Operation):
         grad[self.A.tensor > self.max] = 0
         self.A.backward(grad * seed)
 
+class Mean(Operation):
+
+    def __init__(self, A: CompNode, axis=None, keepdims=False):
+        super().__init__()
+        self.A = A
+        self.axis = axis
+        self.keepdims = keepdims
+        self.A.add_parent_op(self)
+
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.tensor = np.mean(self.A.tensor, axis=self.axis, keepdims=self.keepdims)
+
+    def backward(self, seed: np.ndarray | float):
+        # f = Mean(A) = 1/n * sum [ A_i ]
+        # df/dA_j = 1/n * dA_j/dA_j
+        n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
+        self.A.backward(np.ones_like(self.A.tensor) / n * seed)
+
+class Variance(Operation):
+
+    def __init__(self, A: CompNode, axis=None, keepdims=False):
+        super().__init__()
+        self.A = A
+        self.axis = axis
+        self.keepdims = keepdims
+        self.A.add_parent_op(self)
+
+    def compute_forward(self):
+        self.A.forward(cc=False)
+        self.mean = np.mean(self.A.tensor, axis=self.axis, keepdims=self.keepdims)
+        self.tensor = np.mean((self.A.tensor - self.mean) ** 2, axis=self.axis, keepdims=self.keepdims)
+
+    def backward(self, seed: np.ndarray | float):
+        # A little brain damage
+        # f = Var(A) = 1/n * sum [ (A_i - Mean(A))^2 ]
+        #            = 1/n * sum [ A_i^2 - 2 * A_i * Mean(A) + Mean(A)^2 ]
+        #            = 1/n * sum [ A_i^2 ] - 2/n * Mean(A) * sum [ A_i ] + Mean(A)^2
+        #            = 1/n * sum [ A_i^2 ] - Mean(A)^2
+        # df/dA_j = 1/n * 2 * A_j * dA_j/dA_j - 2   * Mean(A) * dMean(A)/dA_j * dA_j/dA_j
+        #         = 2/n *     A_j * dA_j/dA_j - 2/n * Mean(A)                 * dA_j/dA_j
+        #         = 2/n * ( A_j - Mean(A) ) * dA_j/dA_j
+        n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
+        self.A.backward(2 / n * (self.A.tensor - self.mean) * seed)
+
 # Exponential
 class Exp(Operation):
 
