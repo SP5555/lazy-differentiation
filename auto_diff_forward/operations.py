@@ -16,10 +16,17 @@ class Operation(CompNode):
 
     def __init__(self):
         super().__init__()
+        self._dirty = True
 
     @classmethod
     def _signature(cls, *args, **kwargs):
         return (id(cls), *(id(arg) for arg in args))
+
+    def mark_dirty(self):
+        if not self._dirty:
+            self._dirty = True
+            for parent in self.parent_op:
+                parent.mark_dirty()
 
     # perform forward pass computation
     # calls compute_forward() if cached tensor is not available
@@ -27,8 +34,9 @@ class Operation(CompNode):
     def forward(self, cc = True):
         if cc: # clear cache flag
             self.clear_graph_cache()
-        if self.tensor is None:
+        if self._dirty:
             self.compute_forward()
+            self._dirty = False
 
     @abstractmethod
     def backward(self, w_r_t: str) -> np.ndarray | float:
@@ -45,6 +53,7 @@ class Negate(Operation):
         if self._is_repeated: return
         super().__init__()
         self.A = A
+        self.A.add_parent_op(self)
     
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -62,6 +71,8 @@ class Add(Operation):
         super().__init__()
         self.A = A
         self.B = B
+        self.A.add_parent_op(self)
+        self.B.add_parent_op(self)
     
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -80,6 +91,8 @@ class Subtract(Operation):
         super().__init__()
         self.A = A
         self.B = B
+        self.A.add_parent_op(self)
+        self.B.add_parent_op(self)
 
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -98,6 +111,8 @@ class Multiply(Operation):
         super().__init__()
         self.A = A
         self.B = B
+        self.A.add_parent_op(self)
+        self.B.add_parent_op(self)
 
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -116,6 +131,8 @@ class Divide(Operation):
         super().__init__()
         self.A = A
         self.B = B
+        self.A.add_parent_op(self)
+        self.B.add_parent_op(self)
 
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -135,6 +152,7 @@ class Exp(Operation):
         if self._is_repeated: return
         super().__init__()
         self.A = A
+        self.A.add_parent_op(self)
 
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -152,6 +170,7 @@ class Log(Operation):
         if self._is_repeated: return
         super().__init__()
         self.A = A
+        self.A.add_parent_op(self)
 
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -168,6 +187,7 @@ class Square(Operation):
         if self._is_repeated: return
         super().__init__()
         self.A = A
+        self.A.add_parent_op(self)
 
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -185,6 +205,8 @@ class Power(Operation):
         super().__init__()
         self.B = B
         self.E = E
+        self.B.add_parent_op(self)
+        self.E.add_parent_op(self)
 
     def compute_forward(self):
         self.B.forward(cc=False)
@@ -203,6 +225,7 @@ class Sqrt(Operation):
         if self._is_repeated: return
         super().__init__()
         self.A = A
+        self.A.add_parent_op(self)
 
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -219,6 +242,7 @@ class Tanh(Operation):
         if self._is_repeated: return
         super().__init__()
         self.A = A
+        self.A.add_parent_op(self)
 
     def compute_forward(self):
         self.A.forward(cc=False)
@@ -235,6 +259,7 @@ class Sigmoid(Operation):
         if self._is_repeated: return
         super().__init__()
         self.A = A
+        self.A.add_parent_op(self)
     
     def compute_forward(self):
         self.A.forward(cc=False)

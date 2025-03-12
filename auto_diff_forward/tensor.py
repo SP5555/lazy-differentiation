@@ -29,12 +29,20 @@ class Tensor(CompNode):
         # only allow numpy arrays or float
         if not isinstance(value, (np.ndarray, float)):
             raise TypeError("Value must be a NumPy array or a float.")
+        super().__init__()
         self.tensor = value
         self.name = name
     
     @property
     def _signature(self):
         return id(self)
+
+    def assign(self, value: np.ndarray | float):
+        if not isinstance(value, (np.ndarray, float)):
+            raise TypeError("Assigned value must be a NumPy array or a float.")
+        self.tensor = value
+        for parent in self.parent_op:
+            parent.mark_dirty()
 
     def forward(self, cc = True):
         if cc: # clear cache flag
