@@ -35,16 +35,19 @@ class Operation(CompNode):
         if cc: # clear cache flag
             self.clear_graph_cache()
         if self._dirty:
-            self.compute_forward()
+            self._forward_impl()
             self._dirty = False
 
-    @abstractmethod
     def backward(self, w_r_t: str) -> np.ndarray | float:
-        pass
+        return self._backward_impl(w_r_t)
 
     @abstractmethod
     # computes the forward pass and caches the resulting tensor
-    def compute_forward(self):
+    def _forward_impl(self):
+        pass
+
+    @abstractmethod
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         pass
 
 class Negate(Operation):
@@ -55,11 +58,11 @@ class Negate(Operation):
         self.A = A
         self.A.add_parent_op(self)
     
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.tensor = -self.A.tensor
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = -f(x)
         # h'(x) = -f'(x)
         return -self.A.backward(w_r_t)
@@ -74,12 +77,12 @@ class Add(Operation):
         self.A.add_parent_op(self)
         self.B.add_parent_op(self)
     
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.B.forward(cc=False)
         self.tensor = self.A.tensor + self.B.tensor
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x) + g(x)
         # h'(x) = f'(x) + g'(x)
         return self.A.backward(w_r_t) + self.B.backward(w_r_t)
@@ -94,12 +97,12 @@ class Subtract(Operation):
         self.A.add_parent_op(self)
         self.B.add_parent_op(self)
 
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.B.forward(cc=False)
         self.tensor = self.A.tensor - self.B.tensor
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x) - g(x)
         # h'(x) = f'(x) - g'(x)
         return self.A.backward(w_r_t) - self.B.backward(w_r_t)
@@ -114,12 +117,12 @@ class Multiply(Operation):
         self.A.add_parent_op(self)
         self.B.add_parent_op(self)
 
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.B.forward(cc=False)
         self.tensor = self.A.tensor * self.B.tensor
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x)g(x)
         # h'(x) = f(x)g'(x) + f'(x)g(x)
         return self.A.tensor * self.B.backward(w_r_t) + self.A.backward(w_r_t) * self.B.tensor
@@ -134,12 +137,12 @@ class Divide(Operation):
         self.A.add_parent_op(self)
         self.B.add_parent_op(self)
 
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.B.forward(cc=False)
         self.tensor = self.A.tensor / self.B.tensor
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x)/g(x)
         # h'(x) = [g(x)f'(x) - f(x)g'(x)] / (g(x)^2)
         B_sq = self.B.tensor ** 2
@@ -154,11 +157,11 @@ class Exp(Operation):
         self.A = A
         self.A.add_parent_op(self)
 
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.tensor = np.exp(self.A.tensor)
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = e^f(x)
         # h'(x) = e^f(x) * f'(x)
         return self.tensor * self.A.backward(w_r_t)
@@ -172,11 +175,11 @@ class Log(Operation):
         self.A = A
         self.A.add_parent_op(self)
 
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.tensor = np.log(self.A.tensor)
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = ln(f(x))
         # h'(x) = 1 / f(x) * f'(x)
         return self.A.backward(w_r_t) / self.A.tensor
@@ -189,11 +192,11 @@ class Square(Operation):
         self.A = A
         self.A.add_parent_op(self)
 
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.tensor = self.A.tensor ** 2
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = f(x)^2
         # h'(x) = 2 * f(x) * f'(x)
         return 2 * self.A.tensor * self.A.backward(w_r_t)
@@ -208,12 +211,12 @@ class Power(Operation):
         self.B.add_parent_op(self)
         self.E.add_parent_op(self)
 
-    def compute_forward(self):
+    def _forward_impl(self):
         self.B.forward(cc=False)
         self.E.forward(cc=False)
         self.tensor = self.B.tensor ** self.E.tensor
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # This is some witchcraft I never learned anywhere.
         # h(x) = f(x)^g(x)
         # h'(x) = f(x)^g(x) (g'(x)ln(f(x)) + g(x)f'(x)/f(x))
@@ -227,11 +230,11 @@ class Sqrt(Operation):
         self.A = A
         self.A.add_parent_op(self)
 
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.tensor = np.sqrt(self.A.tensor)
     
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = sqrt(f(x))
         # h'(x) = 1 / (2 * sqrt(f(x))) * f'(x)
         return 0.5 * self.A.backward(w_r_t) / self.tensor
@@ -244,11 +247,11 @@ class Tanh(Operation):
         self.A = A
         self.A.add_parent_op(self)
 
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.tensor = np.tanh(self.A.tensor)
 
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = tanh(f(x))
         # h'(x) = (1 - [tanh(f(x))]^2) * f'(x)
         return (1 - self.tensor ** 2) * self.A.backward(w_r_t)
@@ -261,11 +264,11 @@ class Sigmoid(Operation):
         self.A = A
         self.A.add_parent_op(self)
     
-    def compute_forward(self):
+    def _forward_impl(self):
         self.A.forward(cc=False)
         self.tensor = (np.tanh(self.A.tensor / 2) + 1) / 2
     
-    def backward(self, w_r_t: str) -> np.ndarray | float:
+    def _backward_impl(self, w_r_t: str) -> np.ndarray | float:
         # h(x) = sigmoid(f(x))
         # h'(x) = sigmoid(f(x)) * (1 - sigmoid(f(x))) * f'(x)
         return self.tensor * (1 - self.tensor) * self.A.backward(w_r_t)

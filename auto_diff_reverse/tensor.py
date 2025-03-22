@@ -21,7 +21,7 @@ class Tensor(CompNode):
         The value assigned to the tensor, used in both
         the forward and backward passes of the computation.
 
-    require_grad : bool
+    requires_grad : bool
         Whether this tensor requires gradient computation.\\
         If `True`, gradients will be tracked during the backward pass.\\
         If `False`, this tensor will not accumulate gradients.
