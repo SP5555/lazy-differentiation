@@ -13,9 +13,13 @@ class Operation(CompNode):
         GLOBAL_GRAPH_CACHE[sig] = instance
         instance._is_repeated = False
         return instance
-    
-    def __init__(self):
+
+    def __init__(self, *args: CompNode, requires_grad: bool = None):
         super().__init__()
+        if requires_grad is None:
+            self.requires_grad = any(tensor.requires_grad for tensor in args)
+        else:
+            self.requires_grad = requires_grad
         self._dirty = True
 
     @classmethod
@@ -38,8 +42,12 @@ class Operation(CompNode):
             self.compute_forward()
             self._dirty = False
 
+    def backward(self, seed: np.ndarray | float):
+        if self.requires_grad:
+            self.backward_impl(seed)
+
     @abstractmethod
-    def backward(self):
+    def backward_impl(self):
         pass
 
     @abstractmethod
@@ -49,9 +57,9 @@ class Operation(CompNode):
 
 class Negate(Operation):
 
-    def __init__(self, A: CompNode):
+    def __init__(self, A: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.A.add_parent_op(self)
 
@@ -59,16 +67,16 @@ class Negate(Operation):
         self.A.forward(cc=False)
         self.tensor = -self.A.tensor
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = -A
         # df/dA = -dA/dA
         self.A.backward(-seed)
 
 class Add(Operation):
 
-    def __init__(self, A: CompNode, B: CompNode):
+    def __init__(self, A: CompNode, B: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, B, requires_grad=requires_grad)
         self.A = A
         self.B = B
         self.A.add_parent_op(self)
@@ -79,7 +87,7 @@ class Add(Operation):
         self.B.forward(cc=False)
         self.tensor = self.A.tensor + self.B.tensor
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = A + B
         # df/dA = dA/dA
         # df/dB = dB/dB
@@ -88,9 +96,9 @@ class Add(Operation):
 
 class Subtract(Operation):
 
-    def __init__(self, A: CompNode, B: CompNode):
+    def __init__(self, A: CompNode, B: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, B, requires_grad=requires_grad)
         self.A = A
         self.B = B
         self.A.add_parent_op(self)
@@ -101,7 +109,7 @@ class Subtract(Operation):
         self.B.forward(cc=False)
         self.tensor = self.A.tensor - self.B.tensor
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = A - B
         # df/dA = dA/dA
         # df/dB = -dB/dB
@@ -110,9 +118,9 @@ class Subtract(Operation):
 
 class Multiply(Operation):
 
-    def __init__(self, A: CompNode, B: CompNode):
+    def __init__(self, A: CompNode, B: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, B, requires_grad=requires_grad)
         self.A = A
         self.B = B
         self.A.add_parent_op(self)
@@ -123,7 +131,7 @@ class Multiply(Operation):
         self.B.forward(cc=False)
         self.tensor = self.A.tensor * self.B.tensor
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = AB
         # df/dA = B * dA/dA
         # df/dB = A * dB/dB
@@ -132,9 +140,9 @@ class Multiply(Operation):
 
 class Divide(Operation):
 
-    def __init__(self, A: CompNode, B: CompNode):
+    def __init__(self, A: CompNode, B: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, B, requires_grad=requires_grad)
         self.A = A
         self.B = B
         self.A.add_parent_op(self)
@@ -145,7 +153,7 @@ class Divide(Operation):
         self.B.forward(cc=False)
         self.tensor = self.A.tensor / self.B.tensor
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = A/B
         # df/dA = 1 / B * dA/dA
         # df/dB = -A / (B^2) * dB/dB
@@ -154,9 +162,9 @@ class Divide(Operation):
 
 class Maximum(Operation):
 
-    def __init__(self, A: CompNode, B: CompNode):
+    def __init__(self, A: CompNode, B: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, B, requires_grad=requires_grad)
         self.A = A
         self.B = B
         self.A.add_parent_op(self)
@@ -167,7 +175,7 @@ class Maximum(Operation):
         self.B.forward(cc=False)
         self.tensor = np.maximum(self.A.tensor, self.B.tensor)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = Max(A, B)
         # df/dA = 1 * dA/dA     if A > B
         # df/dA = 0 * dA/dA     if A < B
@@ -183,9 +191,9 @@ class Maximum(Operation):
 
 class Minimum(Operation):
 
-    def __init__(self, A: CompNode, B: CompNode):
+    def __init__(self, A: CompNode, B: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, B, requires_grad=requires_grad)
         self.A = A
         self.B = B
         self.A.add_parent_op(self)
@@ -196,7 +204,7 @@ class Minimum(Operation):
         self.B.forward(cc=False)
         self.tensor = np.minimum(self.A.tensor, self.B.tensor)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = Min(A, B)
         # df/dA = 0 * dA/dA     if A > B
         # df/dA = 1 * dA/dA     if A < B
@@ -212,9 +220,9 @@ class Minimum(Operation):
 
 class Abs(Operation):
 
-    def __init__(self, A: CompNode):
+    def __init__(self, A: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.A.add_parent_op(self)
     
@@ -222,7 +230,7 @@ class Abs(Operation):
         self.A.forward(cc=False)
         self.tensor = np.abs(self.A.tensor)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = Abs(A)
         # df/dA =  1 * dA/dA    if A > 0
         # df/dA = -1 * dA/dA    if A < 0
@@ -234,9 +242,9 @@ class Abs(Operation):
 
 class Clip(Operation):
 
-    def __init__(self, A: CompNode, min: float, max: float):
+    def __init__(self, A: CompNode, min: float, max: float, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.min = min
         self.max = max
@@ -246,7 +254,7 @@ class Clip(Operation):
         self.A.forward(cc=False)
         self.tensor = np.clip(self.A.tensor, self.min, self.max)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # Gradient is zero where the tensor is clipped (outside the range)
         grad = np.ones_like(self.A.tensor)
         grad[self.A.tensor < self.min] = 0
@@ -259,25 +267,23 @@ class Mean(Operation):
                  A: CompNode,
                  axis=None,
                  keepdims=False,
-                 require_grad=True):
+                 requires_grad=None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.axis = axis
         self.keepdims = keepdims
-        self.require_grad = require_grad
         self.A.add_parent_op(self)
 
     def compute_forward(self):
         self.A.forward(cc=False)
         self.tensor = np.mean(self.A.tensor, axis=self.axis, keepdims=self.keepdims)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = Mean(A) = 1/n * sum [ A_i ]
         # df/dA_j = 1/n * dA_j/dA_j
-        if self.require_grad:
-            n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
-            self.A.backward(np.ones_like(self.A.tensor) / n * seed)
+        n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
+        self.A.backward(np.ones_like(self.A.tensor) / n * seed)
 
 class Variance(Operation):
 
@@ -285,13 +291,12 @@ class Variance(Operation):
                  A: CompNode,
                  axis=None,
                  keepdims=False,
-                 require_grad=True):
+                 requires_grad=None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.axis = axis
         self.keepdims = keepdims
-        self.require_grad = require_grad
         self.A.add_parent_op(self)
 
     def compute_forward(self):
@@ -299,7 +304,7 @@ class Variance(Operation):
         self.mean = np.mean(self.A.tensor, axis=self.axis, keepdims=self.keepdims)
         self.tensor = np.mean((self.A.tensor - self.mean) ** 2, axis=self.axis, keepdims=self.keepdims)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # A little brain damage
         # f = Var(A) = 1/n * sum [ (A_i - Mean(A))^2 ]
         #            = 1/n * sum [ A_i^2 - 2 * A_i * Mean(A) + Mean(A)^2 ]
@@ -308,16 +313,15 @@ class Variance(Operation):
         # df/dA_j = 1/n * 2 * A_j * dA_j/dA_j - 2   * Mean(A) * dMean(A)/dA_j * dA_j/dA_j
         #         = 2/n *     A_j * dA_j/dA_j - 2/n * Mean(A)                 * dA_j/dA_j
         #         = 2/n * ( A_j - Mean(A) ) * dA_j/dA_j
-        if self.require_grad:
-            n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
-            self.A.backward(2 / n * (self.A.tensor - self.mean) * seed)
+        n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
+        self.A.backward(2 / n * (self.A.tensor - self.mean) * seed)
 
 # Exponential
 class Exp(Operation):
 
-    def __init__(self, A: CompNode):
+    def __init__(self, A: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.A.add_parent_op(self)
 
@@ -325,7 +329,7 @@ class Exp(Operation):
         self.A.forward(cc=False)
         self.tensor = np.exp(self.A.tensor)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = e^A
         # df/dA = e^A * dA/dA
         self.A.backward(self.tensor * seed)
@@ -333,9 +337,9 @@ class Exp(Operation):
 # Natural Log
 class Log(Operation):
 
-    def __init__(self, A: CompNode):
+    def __init__(self, A: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.A.add_parent_op(self)
 
@@ -343,16 +347,16 @@ class Log(Operation):
         self.A.forward(cc=False)
         self.tensor = np.log(self.A.tensor)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = ln(A)
         # df/dA = 1 / A * dA/dA
         self.A.backward(seed / self.A.tensor)
 
 class Square(Operation):
 
-    def __init__(self, A: CompNode):
+    def __init__(self, A: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.A.add_parent_op(self)
 
@@ -360,16 +364,16 @@ class Square(Operation):
         self.A.forward(cc=False)
         self.tensor = self.A.tensor ** 2
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = A^2
         # df/dA = 2 * A * dA/dA
         self.A.backward(2 * self.A.tensor * seed)
 
 class Power(Operation):
 
-    def __init__(self, A: CompNode, B: CompNode):
+    def __init__(self, A: CompNode, B: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, B, requires_grad=requires_grad)
         self.A = A
         self.B = B
         self.A.add_parent_op(self)
@@ -380,7 +384,7 @@ class Power(Operation):
         self.B.forward(cc=False)
         self.tensor = self.A.tensor ** self.B.tensor
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = A^B
         # df/dA = B * A^(B-1) * dA/dA
         # df/dB = ln(A) * A^B * dB/dB
@@ -389,9 +393,9 @@ class Power(Operation):
 
 class Sqrt(Operation):
 
-    def __init__(self, A: CompNode):
+    def __init__(self, A: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.A.add_parent_op(self)
 
@@ -399,16 +403,16 @@ class Sqrt(Operation):
         self.A.forward(cc=False)
         self.tensor = np.sqrt(self.A.tensor)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = sqrt(A)
         # df/dA = 1 / (2 * sqrt(A)) * dA/dA
         self.A.backward(0.5 * seed / self.tensor)
 
 class Tanh(Operation):
 
-    def __init__(self, A: CompNode):
+    def __init__(self, A: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.A.add_parent_op(self)
 
@@ -416,16 +420,16 @@ class Tanh(Operation):
         self.A.forward(cc=False)
         self.tensor = np.tanh(self.A.tensor)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = tanh(A)
         # df/dA = (1 - [tanh(A)]^2) * dA/dA
         self.A.backward((1.0 - (self.tensor ** 2)) * seed)
 
 class Sigmoid(Operation):
 
-    def __init__(self, A: CompNode):
+    def __init__(self, A: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.A.add_parent_op(self)
 
@@ -433,16 +437,16 @@ class Sigmoid(Operation):
         self.A.forward(cc=False)
         self.tensor = (np.tanh(self.A.tensor / 2) + 1) / 2
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = sigmoid(A)
         # df/dA = sigmoid(A) * (1 - sigmoid(A)) * dA/dA
         self.A.backward(self.tensor * (1 - self.tensor) * seed)
 
 # Dot product
 class Matmul(Operation):
-    def __init__(self, A: CompNode, B: CompNode):
+    def __init__(self, A: CompNode, B: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, B, requires_grad=requires_grad)
         self.A = A
         self.B = B
         self.A.add_parent_op(self)
@@ -453,7 +457,7 @@ class Matmul(Operation):
         self.B.forward(cc=False)
         self.tensor = np.matmul(self.A.tensor, self.B.tensor)
 
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # Z = A dot B
         # dZ/dA = dZ/dZ dot B^T
         # dZ/dB = A^T dot dZ/dZ
@@ -464,9 +468,9 @@ class Softmax(Operation):
     # Softmax is one hell of a tricky activation
     # to get the auto-diff system to work with
     # due to its interdependencies between outputs
-    def __init__(self, A: CompNode):
+    def __init__(self, A: CompNode, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.A.add_parent_op(self)
     
@@ -475,7 +479,7 @@ class Softmax(Operation):
         exp = np.exp(self.A.tensor - np.max(self.A.tensor, axis=0, keepdims=True))
         self.tensor = exp / np.sum(exp, axis=0, keepdims=True)
     
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # math
         # S_i is softmax(z_i)
         # Jacobian = diag(S) - S dot S.T
@@ -499,9 +503,9 @@ class Softmax(Operation):
 
 class Huber(Operation):
 
-    def __init__(self, A: CompNode, d: float):
+    def __init__(self, A: CompNode, d: float, requires_grad: bool = None):
         if self._is_repeated: return
-        super().__init__()
+        super().__init__(A, requires_grad=requires_grad)
         self.A = A
         self.d = d
         self.A.add_parent_op(self)
@@ -520,7 +524,7 @@ class Huber(Operation):
 
         self.tensor = mid_expression + p_expression + n_expression
     
-    def backward(self, seed: np.ndarray | float):
+    def backward_impl(self, seed: np.ndarray | float):
         # f = 1/2 * a^2         if |a| <= d
         # f = d * (|a| - d/2)   if |a| > d
         # df/dA = a * dA/dA     if |a| <= d

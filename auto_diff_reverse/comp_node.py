@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from numpy import ndarray
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Tuple
 if TYPE_CHECKING:
     from .operations import Operation
 
-GLOBAL_GRAPH_CACHE = {}
+GLOBAL_GRAPH_CACHE: Dict[Tuple[int, ...], "CompNode"] = {}
 
 class CompNode(ABC):
     """
@@ -22,8 +22,10 @@ class CompNode(ABC):
         GLOBAL_GRAPH_CACHE.clear()
 
     def __init__(self):
+        self._is_repeated = False
         self.tensor: ndarray | float = None
         self.parent_op: set["Operation"] = set()
+        self.requires_grad = True
 
     def add_parent_op(self, node: "Operation"):
         self.parent_op.add(node)

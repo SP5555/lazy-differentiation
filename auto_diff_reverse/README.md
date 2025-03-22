@@ -21,7 +21,9 @@ from auto_diff_reverse import *
 a = Tensor(np.array([1, 2, 3]))
 b = Tensor(np.array([4, 5, 6]))
 c = Tensor(np.array([7, 8, 9]))
-two = Tensor(2.0) # wrap inside Tensor if you wanna use a constant
+# wrap inside Tensor if you wanna use a constant
+# and set the requires_grad to False
+two = Tensor(2.0, requires_grad=False)
 ```
 
 3. Build the expression:

@@ -20,15 +20,20 @@ class Tensor(CompNode):
     value : np.ndarray, float
         The value assigned to the tensor, used in both
         the forward and backward passes of the computation.
+
+    require_grad : bool
+        Whether this tensor requires gradient computation.\\
+        If `True`, gradients will be tracked during the backward pass.\\
+        If `False`, this tensor will not accumulate gradients.
     """
-    def __init__(self, value: np.ndarray | float, require_grad: bool = True):
+    def __init__(self, value: np.ndarray | float, requires_grad: bool = True):
         # only allow numpy arrays or float
         if not isinstance(value, (np.ndarray, float)):
             raise TypeError("Value must be a NumPy array or a float.")
         super().__init__()
         self.tensor = value
         self.partial = None
-        self.require_grad = require_grad
+        self.requires_grad = requires_grad
         if isinstance(self.tensor, np.ndarray):
             self.partial = np.zeros_like(self.tensor, dtype=np.float64)
         else:
@@ -54,7 +59,7 @@ class Tensor(CompNode):
             self.clear_graph_cache()
     
     def backward(self, seed: np.ndarray | float):
-        if self.require_grad:
+        if self.requires_grad:
             self.partial = np.add(self.partial, seed)
 
     @property
