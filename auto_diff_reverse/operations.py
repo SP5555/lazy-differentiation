@@ -32,12 +32,7 @@ class Operation(CompNode):
             for parent in self.parent_op:
                 parent.mark_dirty()
 
-    # perform forward pass computation
-    # calls compute_forward() if cached tensor is not available
-    # forward call auto-clears the global cache
     def forward(self, cc = True):
-        if cc: # clear cache flag
-            self.clear_graph_cache()
         if self._dirty:
             self._forward_impl()
             self._dirty = False
@@ -47,12 +42,11 @@ class Operation(CompNode):
             self._backward_impl(seed)
 
     @abstractmethod
-    # computes the forward pass and caches the resulting tensor
     def _forward_impl(self):
         pass
 
     @abstractmethod
-    def _backward_impl(self):
+    def _backward_impl(self, seed: np.ndarray | float):
         pass
 
 class Negate(Operation):
@@ -232,13 +226,9 @@ class Abs(Operation):
 
     def _backward_impl(self, seed: np.ndarray | float):
         # f = Abs(A)
-        # df/dA =  1 * dA/dA    if A > 0
-        # df/dA = -1 * dA/dA    if A < 0
-        # if A == 0? I don't know man, do zero
-        # df/dA = 0 * dA/dA
-        grad_A = np.sign(self.A.tensor)
-        grad_A[self.A.tensor == 0] = 0
-        self.A.backward(grad_A * seed)
+        # df/dA =  1 if A > 0, -1 if A < 0, 0 if A == 0
+        # np.sign already returns 0 at zero, works for both arrays and scalars
+        self.A.backward(np.sign(self.A.tensor) * seed)
 
 class Clip(Operation):
 
@@ -255,10 +245,8 @@ class Clip(Operation):
         self.tensor = np.clip(self.A.tensor, self.min, self.max)
 
     def _backward_impl(self, seed: np.ndarray | float):
-        # Gradient is zero where the tensor is clipped (outside the range)
-        grad = np.ones_like(self.A.tensor)
-        grad[self.A.tensor < self.min] = 0
-        grad[self.A.tensor > self.max] = 0
+        # gradient is zero where the value was clipped, 1 otherwise
+        grad = np.where((self.A.tensor >= self.min) & (self.A.tensor <= self.max), 1.0, 0.0)
         self.A.backward(grad * seed)
 
 class Mean(Operation):
@@ -283,6 +271,9 @@ class Mean(Operation):
         # f = Mean(A) = 1/n * sum [ A_i ]
         # df/dA_j = 1/n * dA_j/dA_j
         n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
+        # restore the reduced axis so seed broadcasts correctly against A
+        if self.axis is not None and not self.keepdims:
+            seed = np.expand_dims(seed, axis=self.axis)
         self.A.backward(np.ones_like(self.A.tensor) / n * seed)
 
 class Variance(Operation):
@@ -301,7 +292,9 @@ class Variance(Operation):
 
     def _forward_impl(self):
         self.A.forward(cc=False)
-        self.mean = np.mean(self.A.tensor, axis=self.axis, keepdims=self.keepdims)
+        # store mean with keepdims=True when axis is set so it broadcasts
+        # correctly against A in the variance computation and backward pass
+        self.mean = np.mean(self.A.tensor, axis=self.axis, keepdims=(self.axis is not None))
         self.tensor = np.mean((self.A.tensor - self.mean) ** 2, axis=self.axis, keepdims=self.keepdims)
 
     def _backward_impl(self, seed: np.ndarray | float):
@@ -314,6 +307,9 @@ class Variance(Operation):
         #         = 2/n *     A_j * dA_j/dA_j - 2/n * Mean(A)                 * dA_j/dA_j
         #         = 2/n * ( A_j - Mean(A) ) * dA_j/dA_j
         n = np.prod(self.A.tensor.shape) if self.axis is None else self.A.tensor.shape[self.axis]
+        # restore the reduced axis so seed broadcasts correctly against A
+        if self.axis is not None and not self.keepdims:
+            seed = np.expand_dims(seed, axis=self.axis)
         self.A.backward(2 / n * (self.A.tensor - self.mean) * seed)
 
 # Exponential

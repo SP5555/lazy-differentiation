@@ -45,8 +45,7 @@ class Tensor(CompNode):
             parent.mark_dirty()
 
     def forward(self, cc = True):
-        if cc: # clear cache flag
-            self.clear_graph_cache()
+        pass
 
     def backward(self, w_r_t: str) -> np.ndarray | float:
         if w_r_t == self.name:

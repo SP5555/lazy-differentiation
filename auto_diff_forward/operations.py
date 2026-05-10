@@ -28,12 +28,7 @@ class Operation(CompNode):
             for parent in self.parent_op:
                 parent.mark_dirty()
 
-    # perform forward pass computation
-    # calls compute_forward() if cached tensor is not available
-    # forward call auto-clears the global cache
     def forward(self, cc = True):
-        if cc: # clear cache flag
-            self.clear_graph_cache()
         if self._dirty:
             self._forward_impl()
             self._dirty = False

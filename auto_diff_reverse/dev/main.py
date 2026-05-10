@@ -51,7 +51,7 @@ def main():
     b.zero_grad()
     c.zero_grad()
 
-    # cached values should be empty as forward() clears cache
+    # graph cache holds all ops built during expression construction
     print("global cache")
     for k in GLOBAL_GRAPH_CACHE:
         print(k)

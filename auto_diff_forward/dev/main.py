@@ -30,7 +30,7 @@ def main():
     print(f"df/db  : {expression.backward('b')}")
     print(f"df/dc  : {expression.backward('c')}")
 
-    # cached values should be empty as forward() clears cache
+    # graph cache holds all ops built during expression construction
     print("global cache")
     for k in GLOBAL_GRAPH_CACHE:
         print(k)
